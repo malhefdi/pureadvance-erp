@@ -12,9 +12,11 @@ import {
   calcOTR, calcF0, SterilizationInput, SterilizationResult,
 } from '@/lib/bioprocess';
 import { cn, formatCurrency } from '@/lib/utils';
-import { Beaker, Zap, Thermometer, Wind, DollarSign, Layers, FlaskConical, Target, ChevronRight } from 'lucide-react';
+import { Beaker, Zap, Thermometer, Wind, DollarSign, Layers, FlaskConical, Target, ChevronRight, BarChart3, LineChart } from 'lucide-react';
+import { FermentationEconomics } from './fermentation-economics';
+import { FermentationDashboard } from './fermentation-dashboard';
 
-type ToolTab = 'scaleup' | 'media' | 'sensors' | 'seedtrain' | 'cogs' | 'gas' | 'kla';
+type ToolTab = 'scaleup' | 'kla' | 'media' | 'sensors' | 'seedtrain' | 'cogs' | 'gas' | 'economics' | 'dashboard';
 
 const tabs: { id: ToolTab; label: string; icon: React.ReactNode }[] = [
   { id: 'scaleup', label: 'Scale-Up', icon: <Layers className="w-4 h-4" /> },
@@ -24,6 +26,8 @@ const tabs: { id: ToolTab; label: string; icon: React.ReactNode }[] = [
   { id: 'seedtrain', label: 'Seed Train', icon: <FlaskConical className="w-4 h-4" /> },
   { id: 'cogs', label: 'COGS', icon: <DollarSign className="w-4 h-4" /> },
   { id: 'gas', label: 'Gas Mixing', icon: <Zap className="w-4 h-4" /> },
+  { id: 'economics', label: 'Ferm Economics', icon: <BarChart3 className="w-4 h-4" /> },
+  { id: 'dashboard', label: 'Data Dashboard', icon: <LineChart className="w-4 h-4" /> },
 ];
 
 // Default lab bioreactor geometry
@@ -80,6 +84,8 @@ export function BioprocessTools() {
       {activeTab === 'seedtrain' && <SeedTrainPlanner />}
       {activeTab === 'cogs' && <COGSCalculator />}
       {activeTab === 'gas' && <GasMixingCalculator />}
+      {activeTab === 'economics' && <FermentationEconomics />}
+      {activeTab === 'dashboard' && <FermentationDashboard />}
     </div>
   );
 }
