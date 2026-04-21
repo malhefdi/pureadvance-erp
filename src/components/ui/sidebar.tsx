@@ -22,6 +22,7 @@ const navItems = [
   { href: '/equipment', label: 'Equipment', icon: Cog },
   { href: '/qc', label: 'Quality Control', icon: FlaskConical },
   { href: '/bom', label: 'BOM & Materials', icon: FileText },
+  { href: '/bioprocess', label: 'Bioprocess Eng.', icon: FlaskConical },
 ];
 
 export function Sidebar() {
