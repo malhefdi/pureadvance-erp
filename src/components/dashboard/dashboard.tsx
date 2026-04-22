@@ -1,10 +1,10 @@
 'use client';
 
 import { zones, equipment, batches, materials, transferGates, orders } from '@/lib/mock-data';
-import { cn, statusColor, formatCurrency } from '@/lib/utils';
+import { cn, statusColor } from '@/lib/utils';
 import Link from 'next/link';
 import {
-  Factory, Cog, Boxes, FlaskConical, TrendingUp, AlertTriangle,
+  Factory, Cog, Boxes, FlaskConical, AlertTriangle,
   CheckCircle2, Clock, ArrowRight, Map, GitBranch, Package
 } from 'lucide-react';
 
@@ -17,7 +17,7 @@ const completedGates = transferGates.filter(g => g.status === 'completed');
 const activeGates = transferGates.filter(g => g.status === 'in_progress');
 const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing');
 
-const totalEquipmentValue = equipment.reduce((sum, e) => {
+const _totalEquipmentValue = equipment.reduce((sum, e) => {
   const match = e.costRange.match(/\$(\d+)K/g);
   if (match && match.length > 0) {
     const avg = match.reduce((s, m) => s + parseInt(m.replace('$', '').replace('K', '')) * 1000, 0) / match.length;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   ReactFlow,
   Background,
@@ -16,8 +16,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { processStages, equipment, batches } from '@/lib/mock-data';
-import { cn, statusColor, zoneColor } from '@/lib/utils';
-import { Clock, Cog, FlaskConical, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Clock, Cog, FlaskConical } from 'lucide-react';
 
 // Custom node component
 function ProcessNode({ data }: NodeProps) {
@@ -121,8 +121,8 @@ export function ProcessFlow() {
     const edges: Edge[] = [];
     for (let i = 0; i < processStages.length - 1; i++) {
       // Skip edges that cross between different columns in the same row
-      const currentCol = i < 4 ? 0 : i < 6 ? 1 : i < 9 ? 2 : i < 12 ? 3 : 4;
-      const nextCol = (i + 1) < 4 ? 0 : (i + 1) < 6 ? 1 : (i + 1) < 9 ? 2 : (i + 1) < 12 ? 3 : 4;
+      const _currentCol = i < 4 ? 0 : i < 6 ? 1 : i < 9 ? 2 : i < 12 ? 3 : 4;
+      const _nextCol = (i + 1) < 4 ? 0 : (i + 1) < 6 ? 1 : (i + 1) < 9 ? 2 : (i + 1) < 12 ? 3 : 4;
 
       edges.push({
         id: `e-${processStages[i].id}-${processStages[i + 1].id}`,
@@ -143,14 +143,14 @@ export function ProcessFlow() {
     return { initialNodes: nodes, initialEdges: edges };
   }, []);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [_nodes, _setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [_edges, _setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   return (
     <div className="h-[600px] bg-zinc-900/50 rounded-2xl border border-zinc-800">
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={initialNodes}
+        edges={initialEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}

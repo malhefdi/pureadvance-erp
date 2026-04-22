@@ -159,7 +159,7 @@ export function calcScaleUp(
 ): ScaleUpResult[] {
   const results: ScaleUpResult[] = [];
 
-  const scaleRatio = prod.volume / lab.volume;
+  const _scaleRatio = prod.volume / lab.volume;
   const labV_L = lab.volume;
   const prodV_L = prod.volume;
   const labV = labV_L / 1000; // m³
@@ -174,8 +174,8 @@ export function calcScaleUp(
   const labP = calcUngassedPower(labNp, rho, labN, lab.impellerDiameter);
   const prodP_current = calcUngassedPower(prodNp, rho, prodN_current, prod.impellerDiameter);
 
-  const labPV = labP / labV;
-  const prodPV_current = prodP_current / prodV;
+  const _labPV = labP / labV;
+  const _prodPV_current = prodP_current / prodV;
 
   // Lab gas flow
   const labQ = lab.gasFlowRate * labV_L / 1000 / 60; // m³/s
@@ -555,7 +555,7 @@ export function planSeedTrain(
     const prevVol = currentVol / seedRatio;
     let vesselType: string;
     let rpm: number;
-    let temp = 30;
+    const temp = 30;
 
     if (i === 1) {
       vesselType = 'Shake Flask';

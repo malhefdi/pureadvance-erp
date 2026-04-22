@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { materials, bomEntries } from '@/lib/mock-data';
+import { materials } from '@/lib/mock-data';
 import { formatCurrency } from '@/lib/utils';
 import { Sidebar } from '@/components/ui/sidebar';
-import { FileText, Calculator, Package, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Calculator, Package, AlertTriangle, TrendingUp } from 'lucide-react';
 
 export default function BOMPage() {
   const [batchSize, setBatchSize] = useState(100);

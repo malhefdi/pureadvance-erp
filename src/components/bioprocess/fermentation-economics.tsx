@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { formatCurrency, cn } from '@/lib/utils';
-import { DollarSign, TrendingDown, BarChart3, Factory, Beaker, ArrowRight, FlaskConical } from 'lucide-react';
+import { DollarSign, TrendingDown, BarChart3, Factory, FlaskConical } from 'lucide-react';
 
 // ============================================================
 // TYPES
@@ -313,9 +313,9 @@ export function FermentationEconomics() {
               <TrendingDown className="w-3 h-3" /> Perfusion Parameters
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <InputField label="Perfusion Rate (VVD)" value={inputs.perfusionRateVVD} onChange={v => set('perfusionRateVVD' as any, v)} step={0.1} />
+              <InputField label="Perfusion Rate (VVD)" value={inputs.perfusionRateVVD} onChange={v => set('perfusionRateVVD' as keyof FermentationInputs, v)} step={0.1} />
               <InputField label="Steady-State Titer (g/L)" value={inputs.steadyStateTiter_gL} onChange={v => set('steadyStateTiter_gL', v)} step={0.1} />
-              <InputField label="Run Duration (days)" value={inputs.perfusionRunDuration_days} onChange={v => set('perfusionRunDuration_days' as any, v)} />
+              <InputField label="Run Duration (days)" value={inputs.perfusionRunDuration_days} onChange={v => set('perfusionRunDuration_days' as keyof FermentationInputs, v)} />
             </div>
           </>
         )}
@@ -440,11 +440,11 @@ export function FermentationEconomics() {
               <tr key={row.key} className="border-t border-zinc-800/50">
                 <td className="py-2 px-3 text-zinc-300">{row.label}</td>
                 {(['fed-batch', 'batch', 'perfusion'] as Mode[]).map(mode => {
-                  const val = (results[mode] as any)[row.key];
-                  const isBest = val === Math.min(...Object.values(results).map(r => (r as any)[row.key]));
+                  const val = (results[mode] as unknown as Record<string, unknown>)[row.key];
+                  const isBest = val === Math.min(...Object.values(results).map(r => (r as unknown as Record<string, unknown>)[row.key] as number));
                   return (
                     <td key={mode} className={cn('py-2 px-3 text-right font-mono', isBest ? 'text-emerald-400 font-bold' : 'text-zinc-400')}>
-                      {row.fmt(val)}
+                      {row.fmt(val as number)}
                     </td>
                   );
                 })}
@@ -461,7 +461,7 @@ export function FermentationEconomics() {
 // SHARED COMPONENTS
 // ============================================================
 
-function InputField({ label, value, onChange, step = 1 }: { label: string; value: number; onChange: (v: string) => void; step?: number }) {
+function InputField({ label, value, onChange, step = 1 }: { label: string; value: number; onChange: (_v: string) => void; step?: number }) {
   return (
     <div>
       <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">{label}</label>

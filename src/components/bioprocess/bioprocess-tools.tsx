@@ -2,17 +2,17 @@
 
 import { useState } from 'react';
 import { 
-  calcScaleUp, BioreactorGeometry, ScaleUpResult,
-  calcMediaCost, MediaComponent, BatchPlan, MediaCostResult,
-  selectSensors, SensorCriteria, SensorRecommendation,
-  planSeedTrain, SeedStage,
-  calcCOGS, COGSInputs, COGSResult,
-  calcGasBlend, GasBlendResult,
-  calcKLaVanTRiet, calcSuperficialGasVelocity, calcUngassedPower, calcGassedPower, getPowerNumber,
-  calcOTR, calcF0, SterilizationInput, SterilizationResult,
+  calcScaleUp, BioreactorGeometry,
+  calcMediaCost, MediaComponent, BatchPlan,
+  selectSensors, SensorCriteria,
+  planSeedTrain,
+  calcCOGS, COGSInputs,
+  calcGasBlend,
+  calcKLaVanTRiet,
+  calcOTR,
 } from '@/lib/bioprocess';
 import { cn, formatCurrency } from '@/lib/utils';
-import { Beaker, Zap, Thermometer, Wind, DollarSign, Layers, FlaskConical, Target, ChevronRight, BarChart3, LineChart } from 'lucide-react';
+import { Beaker, Zap, Wind, DollarSign, Layers, FlaskConical, Target, ChevronRight, BarChart3, LineChart } from 'lucide-react';
 import { FermentationEconomics } from './fermentation-economics';
 import { FermentationDashboard } from './fermentation-dashboard';
 
@@ -185,7 +185,8 @@ function KLaCalculator() {
   const otr = calcOTR(kLa, cStar, cl);
   const otr_h = otr * 3600; // mg/(L·h)
   const otr_mmol = otr_h / 32; // mmol/(L·h)
-  const totalO2Transfer = otr * volume; // mg/s for entire vessel
+  // total O2 transfer: otr * volume (mg/s for entire vessel)
+  // const totalO2Transfer = otr * volume;
 
   return (
     <div className="space-y-6">
@@ -353,31 +354,31 @@ function SensorSelector() {
             label="Scale"
             value={criteria.scale}
             options={[{v:'lab',l:'Lab (2-10L)'},{v:'pilot',l:'Pilot (10-200L)'},{v:'production',l:'Production (200L+)'},{v:'commercial',l:'Commercial'}]}
-            onChange={v => setCriteria({...criteria, scale: v as any})}
+            onChange={v => setCriteria({...criteria, scale: v as SensorCriteria['scale']})}
           />
           <SelectField
             label="Modality"
             value={criteria.modality}
             options={[{v:'microbial',l:'Microbial (Bt, E. coli)'},{v:'mammalian',l:'Mammalian (CHO, HEK)'},{v:'cell_therapy',l:'Cell Therapy'},{v:'viral_vector',l:'Viral Vector'}]}
-            onChange={v => setCriteria({...criteria, modality: v as any})}
+            onChange={v => setCriteria({...criteria, modality: v as SensorCriteria['modality']})}
           />
           <SelectField
             label="Vessel Type"
             value={criteria.vesselType}
             options={[{v:'stainless',l:'Stainless Steel'},{v:'single_use',l:'Single-Use'}]}
-            onChange={v => setCriteria({...criteria, vesselType: v as any})}
+            onChange={v => setCriteria({...criteria, vesselType: v as SensorCriteria['vesselType']})}
           />
           <SelectField
             label="Environment"
             value={criteria.environment}
             options={[{v:'rd',l:'R&D'},{v:'gmp',l:'cGMP'},{v:'clinical',l:'Clinical'}]}
-            onChange={v => setCriteria({...criteria, environment: v as any})}
+            onChange={v => setCriteria({...criteria, environment: v as SensorCriteria['environment']})}
           />
           <SelectField
             label="Budget"
             value={criteria.budget}
             options={[{v:'low',l:'<$2K/ch'},{v:'medium',l:'$2-10K/ch'},{v:'high',l:'$10K+/ch'}]}
-            onChange={v => setCriteria({...criteria, budget: v as any})}
+            onChange={v => setCriteria({...criteria, budget: v as SensorCriteria['budget']})}
           />
         </div>
 
@@ -646,7 +647,7 @@ function GasMixingCalculator() {
 // SHARED UI COMPONENTS
 // ============================================================
 
-function InputField({ label, value, onChange, step = 1 }: { label: string; value: number; onChange: (v: string) => void; step?: number }) {
+function InputField({ label, value, onChange, step = 1 }: { label: string; value: number; onChange: (_v: string) => void; step?: number }) {
   return (
     <div>
       <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">{label}</label>
@@ -661,7 +662,7 @@ function InputField({ label, value, onChange, step = 1 }: { label: string; value
   );
 }
 
-function SelectField({ label, value, options, onChange }: { label: string; value: string; options: {v: string; l: string}[]; onChange: (v: string) => void }) {
+function SelectField({ label, value, options, onChange }: { label: string; value: string; options: {v: string; l: string}[]; onChange: (_v: string) => void }) {
   return (
     <div>
       <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">{label}</label>

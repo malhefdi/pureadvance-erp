@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { equipment, zones } from '@/lib/mock-data';
 import { cn, statusColor } from '@/lib/utils';
 import { Sidebar } from '@/components/ui/sidebar';
-import { Equipment } from '@/types/erp';
 import { Cog, Clock, TrendingUp, Search } from 'lucide-react';
 
 export default function EquipmentPage() {

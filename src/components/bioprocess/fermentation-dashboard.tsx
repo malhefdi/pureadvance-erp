@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Upload, LineChart, AlertTriangle, TrendingUp, TrendingDown, FileSpreadsheet, X } from 'lucide-react';
+import { Upload, LineChart, AlertTriangle, FileSpreadsheet, X } from 'lucide-react';
 
 // ============================================================
 // TYPES
@@ -340,7 +340,7 @@ export function FermentationDashboard() {
           !c.name.toLowerCase().includes('time') && !c.name.toLowerCase().includes('hour')
         );
         setActiveColumns(dataCols.slice(0, 4).map(c => c.name));
-      } catch (err) {
+      } catch (_err) {
         setError('Failed to parse CSV file.');
       }
     };

@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { ALL_SYMBOLS, PIPING_LINES, ISA_LETTER_CODES, PIDSymbol } from '@/lib/pid-symbols';
-import { PIDEquipment, PIDConnection, PIDInstrument, PIDControlLoop, PIDDrawing, TAG_PREFIXES, TYPICAL_LOOPS } from '@/types/pid';
+import { ALL_SYMBOLS, PIPING_LINES, PIDSymbol } from '@/lib/pid-symbols';
+import { PIDEquipment, PIDNozzle, PIDInstrument, PIDControlLoop, PIDDrawing } from '@/types/pid';
 import { cn } from '@/lib/utils';
-import { X, Layers, GitBranch, Cog, Target, Info, ChevronRight, FileText } from 'lucide-react';
+import { X, Layers, GitBranch, Cog, Target, Info, FileText } from 'lucide-react';
 
 // ============================================================
 // PRE-BUILT: 50L BIOREACTOR P&ID (based on Bailun/Lab1st specs)
@@ -241,7 +241,7 @@ export function PIDViewer() {
 
             {/* Equipment */}
             {pid.equipment.map(eq => {
-              const symbol = getSymbol(eq.symbolId);
+              const _symbol = getSymbol(eq.symbolId);
               const isSelected = selectedItem?.id === eq.id;
               return (
                 <g
@@ -561,7 +561,7 @@ export function PIDViewer() {
                 {selectedItem?.type === 'equipment' && (selectedItemData as PIDEquipment).name}
                 {selectedItem?.type === 'instrument' && (selectedItemData as PIDInstrument).tag}
                 {selectedItem?.type === 'loop' && (selectedItemData as PIDControlLoop).name}
-                {selectedItem?.type === 'nozzle' && (selectedItemData as any).name}
+                {selectedItem?.type === 'nozzle' && (selectedItemData as PIDNozzle).name}
               </span>
             </div>
             <button onClick={() => setSelectedItem(null)} className="text-zinc-500 hover:text-white">

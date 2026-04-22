@@ -1,4 +1,4 @@
-import { Zone, Equipment, Batch, QCRecord, Material, BOMEntry, ProcessStage, TransferGate, Order } from '@/types/erp';
+import { Zone, Equipment, Batch, Material, BOMEntry, ProcessStage, TransferGate, Order } from '@/types/erp';
 
 export const zones: Zone[] = [
   {

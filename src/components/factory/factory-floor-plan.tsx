@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { zones, equipment, batches } from '@/lib/mock-data';
 import { cn, zoneColor, statusColor } from '@/lib/utils';
-import { Equipment, Zone, Batch } from '@/types/erp';
+import { Equipment, Zone } from '@/types/erp';
 import { X, Cog, Thermometer, Wind, Zap, Package, FlaskConical, Box, Layers } from 'lucide-react';
 
 const zoneIcons: Record<string, React.ReactNode> = {
@@ -34,7 +34,7 @@ export function FactoryFloorPlan() {
       return false;
     });
 
-  const activeBatches = batches.filter(b => ['in_progress', 'qc_pending'].includes(b.status));
+  const _activeBatches = batches.filter(b => ['in_progress', 'qc_pending'].includes(b.status));
 
   return (
     <div className="relative">
@@ -76,7 +76,7 @@ export function FactoryFloorPlan() {
 
           {/* Zones */}
           {zones.map((zone) => {
-            const colors = zoneColor(zone.type);
+            const _colors = statusColor(zone.type === 'upstream' ? 'running' : 'idle');
             const zoneEquip = getZoneEquipment(zone.id);
             const isHovered = hoveredZone === zone.id;
             const isSelected = selectedZone?.id === zone.id;

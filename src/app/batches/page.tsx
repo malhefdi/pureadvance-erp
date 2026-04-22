@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { batches, materials } from '@/lib/mock-data';
+import { batches } from '@/lib/mock-data';
 import { cn, statusColor } from '@/lib/utils';
 import { Batch } from '@/types/erp';
 import { Sidebar } from '@/components/ui/sidebar';
@@ -84,7 +84,7 @@ export default function BatchesPage() {
                         .findIndex(k => selectedBatch.currentStage.toLowerCase().includes(k));
                       const isActive = i === currentIdx;
                       const isComplete = i < currentIdx;
-                      const isPending = i > currentIdx;
+                      const _isPending = i > currentIdx;
 
                       return (
                         <div key={step} className="flex items-center gap-3">
