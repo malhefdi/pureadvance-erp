@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   FileText,
   Map,
+  Layers,
 } from 'lucide-react';
 
 const navItems = [
@@ -23,6 +24,7 @@ const navItems = [
   { href: '/qc', label: 'Quality Control', icon: FlaskConical },
   { href: '/bom', label: 'BOM & Materials', icon: FileText },
   { href: '/bioprocess', label: 'Bioprocess Eng.', icon: FlaskConical },
+  { href: '/pid', label: 'P&ID Engineering', icon: Layers },
 ];
 
 export function Sidebar() {
