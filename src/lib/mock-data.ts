@@ -10,7 +10,7 @@ export const zones: Zone[] = [
     id: 'zone-a-upstream',
     name: 'Zone A — Upstream Fermentation',
     type: 'upstream',
-    area: 6, // m² (3m × 2m for 50L)
+    area: 6,
     isoClass: 'ISO 8 (Class 100,000)',
     temperature: '25–40°C',
     description: 'Seed culture through production bioreactor. 380V/50Hz/3Φ, 2-3 bar steam, PW/WFI',
@@ -23,7 +23,7 @@ export const zones: Zone[] = [
     id: 'zone-b-downstream',
     name: 'Zone B — Downstream Processing',
     type: 'downstream',
-    area: 6, // m²
+    area: 6,
     isoClass: 'ISO 8',
     temperature: '4°C (harvest)',
     description: 'Centrifugation, spray drying, freeze drying',
@@ -36,7 +36,7 @@ export const zones: Zone[] = [
     id: 'zone-c-formulation',
     name: 'Zone C — Formulation & Packaging',
     type: 'formulation',
-    area: 12, // m² (4m × 3m for 500L path)
+    area: 12,
     isoClass: 'ISO 8',
     temperature: '20–25°C',
     description: 'Mixing, homogenization, filling, sealing, labeling',
@@ -49,7 +49,7 @@ export const zones: Zone[] = [
     id: 'zone-d-qc',
     name: 'Zone D — QC Laboratory',
     type: 'qc',
-    area: 12, // m²
+    area: 12,
     description: 'Micro (spore count), HPLC, bioassay (LC₅₀), media QC',
     x: 20,
     y: 260,
@@ -60,7 +60,7 @@ export const zones: Zone[] = [
     id: 'zone-e-warehouse',
     name: 'Zone E — Warehouse',
     type: 'warehouse',
-    area: 15, // m²
+    area: 15,
     temperature: '4–8°C (cold)',
     description: 'Cold storage, dry storage, dispatch — GCC/MENA',
     x: 380,
@@ -72,7 +72,7 @@ export const zones: Zone[] = [
     id: 'zone-f-utilities',
     name: 'Zone F — Utilities',
     type: 'utilities',
-    area: 15, // m²
+    area: 15,
     description: 'Electric boiler (2-3 bar, 100-500 kg/h), chiller, oil-free compressor (6-8 bar), PW/WFI system',
     x: 740,
     y: 260,
@@ -86,7 +86,7 @@ export const zones: Zone[] = [
 // ============================================================
 
 export const equipment: Equipment[] = [
-  // Upstream — B. cereus (Bt) fermentation
+  // Upstream
   {
     id: 'eq-seed-br',
     name: 'Seed Bioreactor',
@@ -98,7 +98,7 @@ export const equipment: Equipment[] = [
       sterilization: 'Autoclavable',
       rpm: '300',
       temp: '30°C',
-      '3× impellers': '1/3 vessel diameter',
+      impellers: '3× (1/3 vessel diameter)',
     },
     vendor: 'Eppendorf / Infors HT',
     costRange: '$5K–$15K',
@@ -112,24 +112,25 @@ export const equipment: Equipment[] = [
     category: 'upstream',
     zoneId: 'zone-a-upstream',
     specs: {
-      volume: '50L working',
+      volume: '50L working (80L total, 62.5% fill)',
       material: 'SS316L',
       surfaceFinish: '0.8 Ra (ext), 0.4 Ra (int)',
       sterilization: 'SIP (130°C, 2-3 bar)',
-      agitation: '100–800 rpm, 3× impellers',
+      agitation: '100–800 rpm, 3× Rushton impellers',
       aeration: 'Air 0.5–2.0 VVM, O₂ 0–0.5 VVM',
       temp: '25–40°C (±0.5°C)',
       pH: '6.5–7.5 (±0.1)',
-      DO: '20–80% (±5%)',
+      DO: '≥30% sat (±5%)',
       probes: 'pH×2 (Ingold 25mm), DO×2 (optical), Temp×1 (Pt100)',
       ports: 'Addition×6, Sampling×4, Probe×8',
       CIP: 'Yes (spray ball)',
       offGas: 'O₂ 0-25%, CO₂ 0-10%',
       MFC: 'Yes',
       maxPressure: '2.5 bar relief',
+      antifoam: 'Conductivity sensor + automated peristaltic dosing',
     },
     vendor: 'Lab1st BR500-M1',
-    costRange: '$39K–$43.6K (standard) / $66K–$70K (Pro-C1 cell culture)',
+    costRange: '$39K–$43.6K',
     status: 'running',
     lastMaintenance: '2026-04-10',
     nextMaintenance: '2026-07-10',
@@ -146,15 +147,13 @@ export const equipment: Equipment[] = [
       material: 'SS316L',
       sterilization: 'SIP',
       agitation: '100–800 rpm, 3× impellers',
-      aeration: 'Air 0.5–2.0 VVM, O₂ 0–0.5 VVM',
-      temp: '25–40°C',
-      pH: '6.5–7.5',
-      note: 'Geometric similarity to 50L required for scale-up',
+      note: 'Geometric similarity to 50L required (constant D/T, H/D)',
+      scaleUp: 'Constant kLa strategy',
       floorSpace: '4m × 3m',
       ceilingHeight: '≥5m',
     },
     vendor: 'Lab1st / Eppendorf / Sartorius',
-    costRange: '$50K–$150K (pending vendor)',
+    costRange: '$50K–$150K',
     status: 'idle',
     hoursRunning: 890,
     efficiency: 96,
@@ -164,7 +163,7 @@ export const equipment: Equipment[] = [
     name: 'Media Preparation Tank',
     category: 'upstream',
     zoneId: 'zone-a-upstream',
-    specs: { volume: '100L', type: 'Jacketed', agitation: 'Yes', water: 'PW or WFI' },
+    specs: { volume: '100L', type: 'Jacketed', agitation: 'Yes', water: 'PW or WFI', sterilization: 'Autoclave or in-line' },
     vendor: 'Chinese vendors',
     costRange: '$5K–$10K',
     status: 'running',
@@ -189,7 +188,7 @@ export const equipment: Equipment[] = [
     name: 'Disc Stack Centrifuge',
     category: 'downstream',
     zoneId: 'zone-b-downstream',
-    specs: { type: 'Continuous', rpm: '10,000–15,000', throughput: '10–50 L/h' },
+    specs: { type: 'Continuous', rpm: '10,000–15,000', throughput: '10–50 L/h', output: '15–25% solids pellet' },
     vendor: 'Alfa Laval / GEA',
     costRange: '$15K–$40K',
     status: 'maintenance',
@@ -201,7 +200,7 @@ export const equipment: Equipment[] = [
     name: 'Spray Dryer',
     category: 'downstream',
     zoneId: 'zone-b-downstream',
-    specs: { inletTemp: '175°C', outletTemp: '70–80°C', product: 'Wettable Powder' },
+    specs: { inletTemp: '175°C', outletTemp: '70–80°C', product: 'Wettable Powder (WP)' },
     vendor: 'Büchi / Chinese',
     costRange: '$20K–$50K',
     status: 'idle',
@@ -281,18 +280,13 @@ export const equipment: Equipment[] = [
     hoursRunning: 4100,
     efficiency: 97,
   },
-  // Utilities — from URS section 12
+  // Utilities
   {
     id: 'eq-boiler',
     name: 'Clean Steam Generator / Boiler',
     category: 'utilities',
     zoneId: 'zone-f-utilities',
-    specs: {
-      type: 'Electric',
-      pressure: '2–3 bar',
-      output: '100–150 kg/h (50L) / 300–500 kg/h (500L)',
-      note: 'Plant steam + clean steam generator, or dedicated electric boiler',
-    },
+    specs: { type: 'Electric', pressure: '2–3 bar', output: '100–500 kg/h' },
     vendor: 'Chinese vendors',
     costRange: '$10K–$25K',
     status: 'running',
@@ -328,7 +322,7 @@ export const equipment: Equipment[] = [
     name: 'Water Purification System',
     category: 'utilities',
     zoneId: 'zone-f-utilities',
-    specs: { type: 'PW + WFI capability', capacity: '1000 L/day', note: 'PW or WFI for media prep & CIP' },
+    specs: { type: 'PW + WFI capability', capacity: '1000 L/day' },
     vendor: 'Local suppliers',
     costRange: '$15K–$30K',
     status: 'running',
@@ -338,23 +332,28 @@ export const equipment: Equipment[] = [
 ];
 
 // ============================================================
-// MATERIALS — Fermentation media + control chemicals from URS
+// MATERIALS — Real Bt fermentation media + formulation
+// Sources: URS, BT-PRODUCTION-BRIEF, published literature
 // ============================================================
 
 export const materials: Material[] = [
-  // Fermentation media components
-  { id: 'mat-soy-flour', name: 'Soy Flour', function: 'Carbon/Nitrogen source', usagePercentMin: 10, usagePercentMax: 20, supplier: 'Local / Multiple', pricePerKg: 0.80, currency: 'USD', stockLevel: 500, reorderPoint: 100, unit: 'kg' },
-  { id: 'mat-glucose', name: 'Glucose', function: 'Carbon source', usagePercentMin: 2, usagePercentMax: 5, supplier: 'Local', pricePerKg: 0.60, currency: 'USD', stockLevel: 300, reorderPoint: 80, unit: 'kg' },
-  { id: 'mat-corn-steep', name: 'Corn Steep Liquor', function: 'Nitrogen/vitamin source', usagePercentMin: 1, usagePercentMax: 3, supplier: 'Multiple', pricePerKg: 0.50, currency: 'USD', stockLevel: 200, reorderPoint: 50, unit: 'kg' },
-  { id: 'mat-k2hpo4', name: 'K₂HPO₄', function: 'Buffer/mineral', usagePercentMin: 0.5, usagePercentMax: 1, supplier: 'Local', pricePerKg: 2.50, currency: 'USD', stockLevel: 100, reorderPoint: 20, unit: 'kg' },
-  { id: 'mat-mgso4', name: 'MgSO₄·7H₂O', function: 'Mineral cofactor', usagePercentMin: 0.05, usagePercentMax: 0.1, supplier: 'Local', pricePerKg: 1.20, currency: 'USD', stockLevel: 50, reorderPoint: 10, unit: 'kg' },
-  { id: 'mat-fecl3', name: 'FeCl₃', function: 'Trace mineral', usagePercentMin: 0.01, usagePercentMax: 0.05, supplier: 'Local', pricePerKg: 5.00, currency: 'USD', stockLevel: 10, reorderPoint: 3, unit: 'kg' },
-  { id: 'mat-mnso4', name: 'MnSO₄·H₂O', function: 'Trace mineral', usagePercentMin: 0.01, usagePercentMax: 0.05, supplier: 'Local', pricePerKg: 3.00, currency: 'USD', stockLevel: 10, reorderPoint: 3, unit: 'kg' },
-  // Control chemicals from URS section 6 & 7
+  // === SEED MEDIUM (from BT-PRODUCTION-BRIEF) ===
+  { id: 'mat-starch', name: 'Starch', function: 'Carbon source (seed)', usagePercentMin: 30, usagePercentMax: 30, supplier: 'Local', pricePerKg: 0.50, currency: 'USD', stockLevel: 500, reorderPoint: 100, unit: 'g/L' },
+  { id: 'mat-soy-flour', name: 'Soybean Meal / Soya Flour', function: 'Carbon + Nitrogen source', usagePercentMin: 30, usagePercentMax: 30, supplier: 'Local / Multiple', pricePerKg: 0.80, currency: 'USD', stockLevel: 500, reorderPoint: 100, unit: 'g/L' },
+  { id: 'mat-nacl', name: 'NaCl', function: 'Osmotic balance', usagePercentMin: 9, usagePercentMax: 9, supplier: 'Local', pricePerKg: 0.09, currency: 'USD', stockLevel: 1000, reorderPoint: 200, unit: 'g/L' },
+  { id: 'mat-k2hpo4', name: 'K₂HPO₄', function: 'Buffer (base)', usagePercentMin: 0.5, usagePercentMax: 1, supplier: 'Local', pricePerKg: 2.50, currency: 'USD', stockLevel: 100, reorderPoint: 20, unit: 'g/L' },
+  { id: 'mat-kh2po4', name: 'KH₂PO₄', function: 'Buffer (acid)', usagePercentMin: 0.5, usagePercentMax: 1, supplier: 'Local', pricePerKg: 2.80, currency: 'USD', stockLevel: 100, reorderPoint: 20, unit: 'g/L' },
+  { id: 'mat-mgso4', name: 'MgSO₄·7H₂O', function: 'Mineral cofactor', usagePercentMin: 0.05, usagePercentMax: 0.1, supplier: 'Local', pricePerKg: 1.20, currency: 'USD', stockLevel: 50, reorderPoint: 10, unit: 'g/L' },
+  { id: 'mat-fecl3', name: 'FeCl₃', function: 'Trace mineral', usagePercentMin: 0.01, usagePercentMax: 0.05, supplier: 'Local', pricePerKg: 5.00, currency: 'USD', stockLevel: 10, reorderPoint: 3, unit: 'g/L' },
+  { id: 'mat-mnso4', name: 'MnSO₄·H₂O', function: 'Trace mineral', usagePercentMin: 0.01, usagePercentMax: 0.05, supplier: 'Local', pricePerKg: 3.00, currency: 'USD', stockLevel: 10, reorderPoint: 3, unit: 'g/L' },
+  // === PRODUCTION MEDIUM (same base, industrial scale) ===
+  { id: 'mat-glucose', name: 'Glucose', function: 'Supplemental carbon (fed-batch feed)', usagePercentMin: 50, usagePercentMax: 60, supplier: 'Local', pricePerKg: 0.60, currency: 'USD', stockLevel: 300, reorderPoint: 80, unit: 'g/L (feed conc.)' },
+  { id: 'mat-corn-steep', name: 'Corn Steep Liquor', function: 'Nitrogen/vitamin supplement', usagePercentMin: 1, usagePercentMax: 3, supplier: 'Multiple', pricePerKg: 0.50, currency: 'USD', stockLevel: 200, reorderPoint: 50, unit: 'g/L' },
+  // === CONTROL CHEMICALS (from URS) ===
   { id: 'mat-hcl', name: 'HCl (1M)', function: 'pH down (acid)', usagePercentMin: 0.1, usagePercentMax: 0.5, supplier: 'Local', pricePerKg: 1.50, currency: 'USD', stockLevel: 50, reorderPoint: 10, unit: 'L' },
   { id: 'mat-naoh', name: 'NaOH (1M)', function: 'pH up (base)', usagePercentMin: 0.1, usagePercentMax: 0.5, supplier: 'Local', pricePerKg: 1.00, currency: 'USD', stockLevel: 50, reorderPoint: 10, unit: 'L' },
-  { id: 'mat-antifoam', name: 'Antifoam (silicone-based)', function: 'Foam control', usagePercentMin: 0.01, usagePercentMax: 0.1, supplier: 'Multiple', pricePerKg: 15.00, currency: 'USD', stockLevel: 20, reorderPoint: 5, unit: 'L' },
-  // Formulation components (WP = Wettable Powder)
+  { id: 'mat-antifoam', name: 'Antifoam 204 (polyether)', function: 'Foam control — prefer polyether over silicone', usagePercentMin: 0.1, usagePercentMax: 0.5, supplier: 'Sigma-Aldrich / Multiple', pricePerKg: 15.00, currency: 'USD', stockLevel: 20, reorderPoint: 5, unit: 'L' },
+  // === WP FORMULATION COMPONENTS ===
   { id: 'mat-sipernat', name: 'SIPERNAT® 22 S', function: 'Skeleton / Carrier', usagePercentMin: 5, usagePercentMax: 15, supplier: 'Evonik (Germany)', pricePerKg: 0.44, currency: 'USD', stockLevel: 500, reorderPoint: 100, unit: 'kg' },
   { id: 'mat-mono-glycol', name: 'Monopropylene Glycol', function: 'Anti-freeze / Co-solvent', usagePercentMin: 5, usagePercentMax: 10, supplier: 'Multiple', pricePerKg: 0.99, currency: 'USD', stockLevel: 300, reorderPoint: 80, unit: 'kg' },
   { id: 'mat-unitop-fl', name: 'Unitop-FL', function: 'Suspending / Wetting', usagePercentMin: 1, usagePercentMax: 3, supplier: 'Rossari Biotech (India)', pricePerKg: 10.0, currency: 'USD', stockLevel: 50, reorderPoint: 20, unit: 'kg' },
@@ -362,7 +361,6 @@ export const materials: Material[] = [
   { id: 'mat-unitop-mso', name: 'Unitop-MSO', function: 'Rain-fastness Adjuvant', usagePercentMin: 2, usagePercentMax: 5, supplier: 'Rossari Biotech (India)', pricePerKg: 14.0, currency: 'USD', stockLevel: 40, reorderPoint: 15, unit: 'kg' },
   { id: 'mat-xanthan', name: 'Xanthan Gum', function: 'Thickener / Suspending', usagePercentMin: 0.5, usagePercentMax: 2, supplier: 'Multiple', pricePerKg: 4.75, currency: 'USD', stockLevel: 100, reorderPoint: 30, unit: 'kg' },
   { id: 'mat-sucrose', name: 'Sucrose', function: 'UV Protectant', usagePercentMin: 2, usagePercentMax: 5, supplier: 'Local', pricePerKg: 0.45, currency: 'USD', stockLevel: 400, reorderPoint: 100, unit: 'kg' },
-  { id: 'mat-nacl', name: 'Sodium Chloride', function: 'Osmotic Stabilizer', usagePercentMin: 0.5, usagePercentMax: 1, supplier: 'Local', pricePerKg: 0.09, currency: 'USD', stockLevel: 1000, reorderPoint: 200, unit: 'kg' },
   { id: 'mat-bht', name: 'BHT', function: 'Antioxidant', usagePercentMin: 0.01, usagePercentMax: 0.1, supplier: 'Multiple', pricePerKg: 7.0, currency: 'USD', stockLevel: 20, reorderPoint: 5, unit: 'kg' },
 ];
 
@@ -380,14 +378,14 @@ export const bomEntries: BOMEntry[] = materials.map(m => ({
 }));
 
 // ============================================================
-// BATCHES — Real batch tracking with QC from URS
+// BATCHES — Real Bt batch tracking with QC
 // ============================================================
 
 export const batches: Batch[] = [
   {
     id: 'BTH-2026-001',
     product: 'Bt Biopesticide WP',
-    size: 50, // kg — 50L batch
+    size: 50,
     status: 'in_progress',
     startDate: '2026-04-18',
     estimatedCompletion: '2026-04-25',
@@ -395,11 +393,11 @@ export const batches: Batch[] = [
     equipmentUsed: ['eq-prod-br-50', 'eq-media-prep'],
     qcResults: [],
     materials: [
-      { materialId: 'mat-soy-flour', name: 'Soy Flour', plannedAmount: 8, actualAmount: 0, unit: 'kg' },
-      { materialId: 'mat-glucose', name: 'Glucose', plannedAmount: 2, actualAmount: 0, unit: 'kg' },
-      { materialId: 'mat-corn-steep', name: 'Corn Steep Liquor', plannedAmount: 1, actualAmount: 0, unit: 'kg' },
+      { materialId: 'mat-starch', name: 'Starch', plannedAmount: 1.5, actualAmount: 0, unit: 'kg' },
+      { materialId: 'mat-soy-flour', name: 'Soybean Meal', plannedAmount: 1.5, actualAmount: 0, unit: 'kg' },
+      { materialId: 'mat-nacl', name: 'NaCl', plannedAmount: 0.45, actualAmount: 0, unit: 'kg' },
     ],
-    notes: 'Pilot run — 50L bioreactor batch 1. pH 7.0, DO ≥30%, 30°C, 400-600 rpm, ~60h',
+    notes: 'Fed-batch mode. Two-feed strategy: glucose feed at 10h and 20h. DO ≥30%, pH 7.0, 30°C, 400-600 rpm. Target 48-72h run.',
   },
   {
     id: 'BTH-2026-002',
@@ -411,13 +409,14 @@ export const batches: Batch[] = [
     currentStage: 'QC Testing',
     equipmentUsed: ['eq-mixing-tank', 'eq-homogenizer', 'eq-filling'],
     qcResults: [
-      { id: 'qc-1', batchId: 'BTH-2026-002', testName: 'Spore Count (CFU/g)', targetValue: '≥10⁹', actualValue: '2.3×10⁹', unit: 'CFU/g', result: 'pass', testedBy: 'Dr. Ahmed', testedAt: '2026-04-21T09:00:00Z' },
+      { id: 'qc-1', batchId: 'BTH-2026-002', testName: 'Spore Count (CFU/g)', targetValue: '≥1×10⁹', actualValue: '2.3×10⁹', unit: 'CFU/g', result: 'pass', testedBy: 'Dr. Ahmed', testedAt: '2026-04-21T09:00:00Z', notes: 'FAO/WHO minimum: 1×10⁹ CFU/g' },
       { id: 'qc-2', batchId: 'BTH-2026-002', testName: 'pH', targetValue: '6.5–7.5', actualValue: '7.1', unit: 'pH', result: 'pass', testedBy: 'Dr. Ahmed', testedAt: '2026-04-21T09:15:00Z' },
-      { id: 'qc-3', batchId: 'BTH-2026-002', testName: 'Suspensibility', targetValue: '≥70%', actualValue: '78%', unit: '%', result: 'pass', testedBy: 'Dr. Ahmed', testedAt: '2026-04-21T09:30:00Z' },
-      { id: 'qc-4', batchId: 'BTH-2026-002', testName: 'Wetting Time', targetValue: '≤60 sec', actualValue: '42', unit: 'sec', result: 'pass', testedBy: 'Dr. Ahmed', testedAt: '2026-04-21T09:45:00Z' },
+      { id: 'qc-3', batchId: 'BTH-2026-002', testName: 'Suspensibility', targetValue: '≥60%', actualValue: '78%', unit: '%', result: 'pass', testedBy: 'Dr. Ahmed', testedAt: '2026-04-21T09:30:00Z', notes: 'FAO/WHO: ≥60% for WP' },
+      { id: 'qc-4', batchId: 'BTH-2026-002', testName: 'Wetting Time', targetValue: '≤120 sec', actualValue: '42', unit: 'sec', result: 'pass', testedBy: 'Dr. Ahmed', testedAt: '2026-04-21T09:45:00Z' },
       { id: 'qc-5', batchId: 'BTH-2026-002', testName: 'Moisture Content', targetValue: '≤8%', actualValue: '6.2', unit: '%', result: 'pass', testedBy: 'Dr. Ahmed', testedAt: '2026-04-21T10:00:00Z' },
-      { id: 'qc-6', batchId: 'BTH-2026-002', testName: 'Particle Size', targetValue: '<10 µm', actualValue: '7.8', unit: 'µm', result: 'pass', testedBy: 'Dr. Ahmed', testedAt: '2026-04-21T10:15:00Z' },
-      { id: 'qc-7', batchId: 'BTH-2026-002', testName: 'Bioassay (LC₅₀)', targetValue: 'Within spec', actualValue: '0.08 mg/L', unit: 'mg/L', result: 'pending', testedBy: '', testedAt: '' },
+      { id: 'qc-6', batchId: 'BTH-2026-002', testName: 'Particle Size (<75µm)', targetValue: '≥98% pass', actualValue: '99.1%', unit: '%', result: 'pass', testedBy: 'Dr. Ahmed', testedAt: '2026-04-21T10:15:00Z' },
+      { id: 'qc-7', batchId: 'BTH-2026-002', testName: 'Entomotoxicity (SBU/mL)', targetValue: '≥15×10⁶', actualValue: '18.5×10⁶', unit: 'SBU/mL', result: 'pass', testedBy: 'Dr. Fatima', testedAt: '2026-04-21T11:00:00Z', notes: 'Bioassay against S. litura 3rd instar' },
+      { id: 'qc-8', batchId: 'BTH-2026-002', testName: 'Contamination Check', targetValue: 'No human pathogens', actualValue: 'Negative', unit: '—', result: 'pass', testedBy: 'Dr. Ahmed', testedAt: '2026-04-21T10:30:00Z', notes: 'Gram stain + selective media' },
     ],
     materials: [
       { materialId: 'mat-sipernat', name: 'SIPERNAT® 22 S', plannedAmount: 10, actualAmount: 10.2, unit: 'kg' },
@@ -426,7 +425,7 @@ export const batches: Batch[] = [
       { materialId: 'mat-unitop-mso', name: 'Unitop-MSO', plannedAmount: 3, actualAmount: 3.0, unit: 'kg' },
     ],
     yield: 94.2,
-    notes: 'Full formulation run — awaiting bioassay result',
+    notes: 'Full WP formulation run — awaiting final bioassay confirmation. Fed-batch 2-feed process.',
   },
   {
     id: 'BTH-2026-003',
@@ -438,12 +437,12 @@ export const batches: Batch[] = [
     currentStage: 'Complete',
     equipmentUsed: ['eq-prod-br-50', 'eq-centrifuge', 'eq-spray-dryer', 'eq-mixing-tank', 'eq-homogenizer', 'eq-filling'],
     qcResults: [
-      { id: 'qc-10', batchId: 'BTH-2026-003', testName: 'Spore Count (CFU/g)', targetValue: '≥10⁹', actualValue: '3.1×10⁹', unit: 'CFU/g', result: 'pass', testedBy: 'Dr. Ahmed', testedAt: '2026-04-17T09:00:00Z' },
-      { id: 'qc-11', batchId: 'BTH-2026-003', testName: 'Bioassay (LC₅₀)', targetValue: 'Within spec', actualValue: '0.06 mg/L', unit: 'mg/L', result: 'pass', testedBy: 'Dr. Fatima', testedAt: '2026-04-17T14:00:00Z' },
+      { id: 'qc-10', batchId: 'BTH-2026-003', testName: 'Spore Count (CFU/g)', targetValue: '≥1×10⁹', actualValue: '3.1×10⁹', unit: 'CFU/g', result: 'pass', testedBy: 'Dr. Ahmed', testedAt: '2026-04-17T09:00:00Z' },
+      { id: 'qc-11', batchId: 'BTH-2026-003', testName: 'Entomotoxicity (SBU/mL)', targetValue: '≥15×10⁶', actualValue: '22.1×10⁶', unit: 'SBU/mL', result: 'pass', testedBy: 'Dr. Fatima', testedAt: '2026-04-17T14:00:00Z' },
     ],
     materials: [],
     yield: 97.1,
-    notes: 'First validated batch — 30 units dispatched',
+    notes: 'First validated batch — 30 units dispatched. Dry mass yield: 4.2 g/L (wet: ~16.8 g/L pre-centrifuge)',
   },
   {
     id: 'BTH-2026-004',
@@ -461,23 +460,75 @@ export const batches: Batch[] = [
 ];
 
 // ============================================================
-// PROCESS STAGES — Enhanced with URS parameters
+// PROCESS STAGES — Real Bt parameters from literature + URS
+// Sources: Vu et al. 2010, Malairuang et al. 2023, URS questionnaire
 // ============================================================
 
 export const processStages: ProcessStage[] = [
-  { id: 'ps-mcb', name: 'Master Cell Bank', zone: 'upstream', description: 'Frozen stock (-80°C), Btk HD-1 strain' },
+  { id: 'ps-mcb', name: 'Master Cell Bank', zone: 'upstream', description: 'Frozen stock (-80°C), Btk HD-1 strain, accession number required per FAO/WHO' },
   { id: 'ps-wcb', name: 'Working Cell Bank', zone: 'upstream', description: 'Aliquots from MCB (-80°C)' },
-  { id: 'ps-seed', name: 'Seed Bioreactor', zone: 'upstream', description: '2–5L, 30°C, 300 rpm, 12–16h', duration: '12–16h', equipment: ['eq-seed-br'], parameters: { temp: '30°C', rpm: '300', volume: '2–5L' } },
-  { id: 'ps-prod', name: 'Production Bioreactor', zone: 'upstream', description: '50L→500L, 30°C, pH 6.5–7.5, DO 20–80%, 100–800 rpm', duration: '48–72h', equipment: ['eq-prod-br-50'], parameters: { temp: '25–40°C', pH: '6.5–7.5', DO: '20–80%', rpm: '100–800', 'air VVM': '0.5–2.0', 'O₂ VVM': '0–0.5', 'probes': 'pH×2, DO×2, Temp×1' } },
-  { id: 'ps-harvest', name: 'Harvest', zone: 'downstream', description: 'Continuous centrifuge, 10K–15K rpm', equipment: ['eq-centrifuge'] },
-  { id: 'ps-dry', name: 'Drying', zone: 'downstream', description: 'Spray dry (WP) or freeze dry (higher viability)', equipment: ['eq-spray-dryer', 'eq-freeze-dryer'] },
-  { id: 'ps-mix', name: 'Formulation Mixing', zone: 'formulation', description: 'Add all components per BOM, 30–60 min', duration: '30–60 min', equipment: ['eq-mixing-tank'] },
-  { id: 'ps-homo', name: 'Homogenization', zone: 'formulation', description: 'High-shear, 3000–5000 rpm, particle <10µm', duration: '5–15 min', equipment: ['eq-homogenizer'] },
-  { id: 'ps-qc1', name: 'QC Checkpoint 1', zone: 'qc', description: 'Spore count, pH, suspensibility, moisture, particle size', qcRequired: true },
+  {
+    id: 'ps-seed', name: 'Seed Bioreactor',
+    zone: 'upstream',
+    description: 'Seed medium: Starch 30 g/L + Soya flour 30 g/L + NaCl 9 g/L + buffer',
+    duration: '24h',
+    equipment: ['eq-seed-br'],
+    parameters: { temp: '37°C', pH: '7.0', rpm: '220', volume: '2–5L', medium: 'Seed (starch+soya)' },
+  },
+  {
+    id: 'ps-prod', name: 'Production Bioreactor',
+    zone: 'upstream',
+    description: 'Fed-batch: glucose feed at 10h + 20h (2-feed max to avoid Spo- variants). DO ≥30%. Harvest at 48h (spore peak) or 72h (endotoxin peak).',
+    duration: '48–72h',
+    equipment: ['eq-prod-br-50'],
+    parameters: {
+      mode: 'Fed-batch (2 feeds)',
+      temp: '30°C',
+      pH: '7.0 (±0.1)',
+      DO: '≥30% sat (cascade: agitation 100-600 rpm → gas flow 3-5 VVM → O₂ enrich 40% max)',
+      rpm: '100–800 (3× Rushton impellers)',
+      aeration: '0.5–2.0 VVM air, 0–0.5 VVM O₂',
+      feed: 'Glucose 50-60 g/L, 2 additions at 10h and 20h',
+      feedTrigger: 'Time-based (not DO or glucose depletion)',
+      antifoam: 'Polyether-based (Antifoam 204), automated dosing',
+      harvestPoint: '48h (spore peak) or when endotoxin plateaus at ~48-72h',
+      yield: '~4 g/L dry mass (16-20 g/L wet biomass pre-centrifuge)',
+    },
+  },
+  { id: 'ps-harvest', name: 'Harvest — Centrifugation', zone: 'downstream', description: 'Disc stack centrifuge, 10K–15K rpm. Pellet: 15–25% solids. Hold time <4h before formulation.', equipment: ['eq-centrifuge'] },
+  { id: 'ps-dry', name: 'Drying', zone: 'downstream', description: 'Spray dry (WP, 175°C in / 70-80°C out) or freeze dry (higher viability, -40°C, 48-72h)', equipment: ['eq-spray-dryer', 'eq-freeze-dryer'] },
+  { id: 'ps-mix', name: 'Formulation Mixing', zone: 'formulation', description: 'Add carrier (SIPERNAT), dispersants, adjuvants per BOM. 30–60 min', duration: '30–60 min', equipment: ['eq-mixing-tank'] },
+  { id: 'ps-homo', name: 'Homogenization', zone: 'formulation', description: 'High-shear, 3000–5000 rpm, particle <75µm (≥98% pass)', duration: '5–15 min', equipment: ['eq-homogenizer'] },
+  {
+    id: 'ps-qc1', name: 'QC Checkpoint 1',
+    zone: 'qc',
+    description: 'Spore count (≥1×10⁹ CFU/g), pH (6.5–7.5), suspensibility (≥60%), moisture (≤8%), particle size, wetting time',
+    qcRequired: true,
+    parameters: {
+      sporeCount: '≥1×10⁹ CFU/g (FAO/WHO minimum)',
+      pH: '6.5–7.5',
+      suspensibility: '≥60% (CIPAC MT 15, FAO/WHO)',
+      moisture: '≤8%',
+      particleSize: '≥98% pass 75µm sieve',
+      wettingTime: '≤120 sec',
+    },
+  },
   { id: 'ps-fill', name: 'Filling', zone: 'packaging', description: 'Auto filling — 100g/500g/1kg', equipment: ['eq-filling'] },
   { id: 'ps-seal', name: 'Sealing', zone: 'packaging', description: 'Heat seal, automatic', equipment: ['eq-sealer'] },
-  { id: 'ps-label', name: 'Labeling', zone: 'packaging', description: 'Batch #, expiry, registration', equipment: ['eq-labeler'] },
-  { id: 'ps-qc2', name: 'QC Final Release', zone: 'qc', description: 'Bioassay (LC₅₀), stability sample, batch release decision', qcRequired: true },
+  { id: 'ps-label', name: 'Labeling', zone: 'packaging', description: 'Batch #, expiry (≥2 year shelf life), registration', equipment: ['eq-labeler'] },
+  {
+    id: 'ps-qc2', name: 'QC Final Release',
+    zone: 'qc',
+    description: 'Entomotoxicity (≥15×10⁶ SBU/mL), contamination check (no human pathogens), stability sample, batch release',
+    qcRequired: true,
+    parameters: {
+      entomotoxicity: '≥15×10⁶ SBU/mL (bioassay vs S. litura or target pest)',
+      contamination: 'No human pathogens (Gram stain + selective media)',
+      deltaEndotoxin: '≥1.0 g/L (HPLC)',
+      stability: 'Sample for accelerated storage (40°C/75% RH)',
+      shelfLife: '≥2 years (FAO/WHO)',
+    },
+  },
   { id: 'ps-store', name: 'Cold Storage', zone: 'warehouse', description: '4–8°C, batch record filed' },
   { id: 'ps-dispatch', name: 'Dispatch', zone: 'warehouse', description: 'Ship to market — GCC / MENA' },
 ];
@@ -488,12 +539,12 @@ export const processStages: ProcessStage[] = [
 
 export const transferGates: TransferGate[] = [
   { id: 'G0', name: 'MOU Execution', status: 'completed', description: 'Partnership agreement signed' },
-  { id: 'G1', name: 'Bioreactor Procurement', status: 'in_progress', description: '50L + 500L bioreactor sourcing (Lab1st $39-44K / Eppendorf $80-200K)' },
-  { id: 'G2', name: 'Facility Preparation', status: 'pending', description: 'ISO 8 clean room, utilities (380V/50Hz/3Φ, 6-8 bar air, PW/WFI, 2-3 bar steam)', dependencies: ['G1'] },
-  { id: 'G3', name: 'Pilot Validation (50L)', status: 'pending', description: 'First successful 50L pilot run with IQ/OQ', dependencies: ['G1', 'G2'] },
-  { id: 'G4', name: 'Production Commissioning (500L)', status: 'pending', description: 'Scale-up to 500L with geometric similarity', dependencies: ['G3'] },
-  { id: 'G5', name: 'Process Validation (3 runs)', status: 'pending', description: '3 consecutive validated batches at 500L', dependencies: ['G4'] },
-  { id: 'G6', name: 'Regulatory Submission', status: 'pending', description: 'MEWA/EPA dossier submission', dependencies: ['G5'] },
+  { id: 'G1', name: 'Bioreactor Procurement', status: 'in_progress', description: '50L: Lab1st $39-44K. 500L: pending. Lean total: $50-80K. Standard: $80-120K. Premium: $150-250K.' },
+  { id: 'G2', name: 'Facility Preparation', status: 'pending', description: 'ISO 8, 380V/3Φ, 6-8 bar oil-free air, PW/WFI, 2-3 bar steam (100-500 kg/h)', dependencies: ['G1'] },
+  { id: 'G3', name: 'Pilot Validation (50L)', status: 'pending', description: 'First successful 50L fed-batch. IQ/OQ/PQ. 3 consecutive validated batches.', dependencies: ['G1', 'G2'] },
+  { id: 'G4', name: 'Scale-Up (500L)', status: 'pending', description: 'Geometric similarity confirmed. Constant kLa strategy. 2-feed fed-batch.', dependencies: ['G3'] },
+  { id: 'G5', name: 'Process Validation (3 runs)', status: 'pending', description: '3 consecutive validated batches at 500L. ≥1×10⁹ CFU/g, ≥15×10⁶ SBU/mL.', dependencies: ['G4'] },
+  { id: 'G6', name: 'Regulatory Submission', status: 'pending', description: 'MEWA/EPA dossier. FAO/WHO spec compliance. Strain accession number.', dependencies: ['G5'] },
   { id: 'G7', name: 'First Commercial Batch', status: 'pending', description: 'Market-ready production', dependencies: ['G6'] },
   { id: 'G8', name: 'Market Launch — GCC/MENA', status: 'pending', description: 'Commercial distribution', dependencies: ['G7'] },
 ];
