@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { ZonePIDRenderer } from './zone-pid-renderer';
 import { ZONE_LABELS } from '@/lib/pid-data';
 import { useZoneLiveData } from '@/hooks/use-zone-live-data';
 import { useBreakpoints } from '@/hooks/use-breakpoints';
+import { useExportSVG, exportZoneAsCSV, triggerPrint } from '@/lib/pid-export';
 import type { ZonePIDData, ZoneKPISummary, EquipmentLiveData, AlarmSeverity } from '@/types/pid-zone';
 import { cn } from '@/lib/utils';
 import {
   Activity, AlertTriangle, Cog, Gauge, GitBranch, Layers, Package,
-  Play, Pause, Wrench, XCircle, RotateCcw, Radio, Timer
+  Play, Pause, Wrench, XCircle, RotateCcw, Radio, Timer,
+  Download, FileText, Printer, Image as ImageIcon
 } from 'lucide-react';
 import { TrendChart } from './trend-chart';
 import { ControlLoopDiagram } from './control-loop-diagram';
@@ -407,6 +409,8 @@ export function ZonePIDPanel({ initialZone = 'z-upstream' }: { initialZone?: str
   const [showLabels, setShowLabels] = useState(true);
   const [showFlowAnimation, setShowFlowAnimation] = useState(true);
   const { isMobile, isSmall } = useBreakpoints();
+  const { exportAsPNG, exportAsSVG } = useExportSVG();
+  const svgRef = useRef<SVGSVGElement>(null);
 
   const {
     data: zone,
@@ -515,23 +519,52 @@ export function ZonePIDPanel({ initialZone = 'z-upstream' }: { initialZone?: str
       {activeTab === 'drawing' && (
         <>
           {/* Layer controls — wrap on mobile */}
-          <div className="flex items-center gap-3 flex-wrap text-xs text-zinc-400">
-            <label className="flex items-center gap-1.5">
-              <input type="checkbox" checked={showInstruments} onChange={e => setShowInstruments(e.target.checked)} className="accent-violet-500" />
-              {isMobile ? 'Inst.' : 'Instruments'}
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input type="checkbox" checked={showConnections} onChange={e => setShowConnections(e.target.checked)} className="accent-violet-500" />
-              {isMobile ? 'Pipes' : 'Connections'}
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input type="checkbox" checked={showLabels} onChange={e => setShowLabels(e.target.checked)} className="accent-violet-500" />
-              Labels
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input type="checkbox" checked={showFlowAnimation} onChange={e => setShowFlowAnimation(e.target.checked)} className="accent-violet-500" />
-              {isMobile ? 'Flow' : 'Flow Animation'}
-            </label>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-3 flex-wrap text-xs text-zinc-400">
+              <label className="flex items-center gap-1.5">
+                <input type="checkbox" checked={showInstruments} onChange={e => setShowInstruments(e.target.checked)} className="accent-violet-500" />
+                {isMobile ? 'Inst.' : 'Instruments'}
+              </label>
+              <label className="flex items-center gap-1.5">
+                <input type="checkbox" checked={showConnections} onChange={e => setShowConnections(e.target.checked)} className="accent-violet-500" />
+                {isMobile ? 'Pipes' : 'Connections'}
+              </label>
+              <label className="flex items-center gap-1.5">
+                <input type="checkbox" checked={showLabels} onChange={e => setShowLabels(e.target.checked)} className="accent-violet-500" />
+                Labels
+              </label>
+              <label className="flex items-center gap-1.5">
+                <input type="checkbox" checked={showFlowAnimation} onChange={e => setShowFlowAnimation(e.target.checked)} className="accent-violet-500" />
+                {isMobile ? 'Flow' : 'Flow Animation'}
+              </label>
+            </div>
+            {/* Export controls */}
+            <div className="flex items-center gap-1 no-print">
+              <button
+                onClick={() => {
+                  const svg = document.querySelector(`[data-pid-svg="${activeZone}"]`) as SVGSVGElement;
+                  exportAsPNG(svg, `${zone.drawingNumber}.png`);
+                }}
+                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                title="Export as PNG"
+              >
+                <ImageIcon className="w-3 h-3" /> PNG
+              </button>
+              <button
+                onClick={() => exportZoneAsCSV(zone)}
+                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                title="Export data as CSV"
+              >
+                <FileText className="w-3 h-3" /> CSV
+              </button>
+              <button
+                onClick={triggerPrint}
+                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                title="Print P&ID"
+              >
+                <Printer className="w-3 h-3" /> Print
+              </button>
+            </div>
           </div>
 
           {/* Renderer */}

@@ -660,8 +660,9 @@ export function ZonePIDRenderer({
       </div>
 
       {/* SVG Canvas */}
-      <svg
+        <svg
         ref={svgRef}
+        data-pid-svg={zone.zoneId}
         viewBox={`${zone.viewBox.x} ${zone.viewBox.y} ${zone.viewBox.width} ${zone.viewBox.height}`}
         className="w-full touch-none"
         style={{ minHeight: svgMinHeight, maxHeight: svgMaxHeight, cursor: 'grab' }}

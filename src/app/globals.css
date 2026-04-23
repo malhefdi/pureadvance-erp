@@ -44,3 +44,30 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: #52525b;
 }
+
+/* Print-friendly P&ID */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+  /* Hide sidebar, nav, controls when printing */
+  nav, aside, button, .scrollbar-thin {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  /* Show only the drawing */
+  .print-show {
+    display: block !important;
+  }
+}
