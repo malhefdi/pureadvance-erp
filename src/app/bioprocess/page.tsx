@@ -1,11 +1,9 @@
-import { Sidebar } from '@/components/ui/sidebar';
+import { AppShell } from '@/components/ui/app-shell';
 import { BioprocessTools } from '@/components/bioprocess/bioprocess-tools';
 
 export default function BioprocessPage() {
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <Sidebar />
-      <main className="pl-64 p-8">
+    <AppShell>
         <div className="max-w-[1400px] mx-auto">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-white">Bioprocess Engineering</h1>
@@ -13,7 +11,6 @@ export default function BioprocessPage() {
           </div>
           <BioprocessTools />
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

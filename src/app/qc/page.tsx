@@ -2,7 +2,7 @@
 
 import { batches } from '@/lib/mock-data';
 import { cn, statusColor } from '@/lib/utils';
-import { Sidebar } from '@/components/ui/sidebar';
+import { AppShell } from '@/components/ui/app-shell';
 import { FlaskConical, CheckCircle2, XCircle, AlertCircle, BarChart3 } from 'lucide-react';
 
 export default function QCPage() {
@@ -14,9 +14,9 @@ export default function QCPage() {
   const pendingTests = allTests.filter(t => t.result === 'pending').length;
 
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <div className="pl-64"><Sidebar /></div>
-      <main className="pl-64 p-8">
+    <AppShell>
+
+      <div>
         <div className="max-w-[1400px] mx-auto">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-white">Quality Control</h1>
@@ -132,8 +132,8 @@ export default function QCPage() {
             </div>
           ))}
         </div>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }
 

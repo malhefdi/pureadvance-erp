@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { materials } from '@/lib/mock-data';
 import { formatCurrency } from '@/lib/utils';
-import { Sidebar } from '@/components/ui/sidebar';
+import { AppShell } from '@/components/ui/app-shell';
 import { Calculator, Package, AlertTriangle, TrendingUp } from 'lucide-react';
 
 export default function BOMPage() {
@@ -17,9 +17,9 @@ export default function BOMPage() {
   const lowStock = materials.filter(m => m.stockLevel <= m.reorderPoint * 1.5);
 
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <div className="pl-64"><Sidebar /></div>
-      <main className="pl-64 p-8">
+    <AppShell>
+
+      <div>
         <div className="max-w-[1400px] mx-auto">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-white">Bill of Materials</h1>
@@ -186,7 +186,7 @@ export default function BOMPage() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

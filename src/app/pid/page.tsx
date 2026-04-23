@@ -1,11 +1,9 @@
-import { Sidebar } from '@/components/ui/sidebar';
+import { AppShell } from '@/components/ui/app-shell';
 import { PIDViewer } from '@/components/pid/pid-viewer';
 
 export default function PIDPage() {
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <Sidebar />
-      <main className="pl-64 p-8">
+    <AppShell>
         <div className="max-w-[1400px] mx-auto">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-white">P&ID Engineering</h1>
@@ -13,7 +11,6 @@ export default function PIDPage() {
           </div>
           <PIDViewer />
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

@@ -4,16 +4,14 @@ import { useState } from 'react';
 import { batches } from '@/lib/mock-data';
 import { cn, statusColor } from '@/lib/utils';
 import { Batch } from '@/types/erp';
-import { Sidebar } from '@/components/ui/sidebar';
+import { AppShell } from '@/components/ui/app-shell';
 import { Boxes, ChevronRight, Clock, Cog, FlaskConical, X, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
 export default function BatchesPage() {
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
 
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <Sidebar />
-      <main className="pl-64 p-8">
+    <AppShell>
         <div className="max-w-[1400px] mx-auto">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-white">Batch Tracking</h1>
@@ -196,7 +194,6 @@ export default function BatchesPage() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }
