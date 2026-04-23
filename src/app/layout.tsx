@@ -12,9 +12,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const description =
+  "Bioprocess facility management for fermentation, manufacturing, batch tracking, and quality control.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://pureadvance-erp.vercel.app"),
   title: "Pure Advance ERP",
-  description: "Bioprocess facility management — fermentation, manufacturing, and quality control",
+  description,
+  applicationName: "Pure Advance ERP",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -24,6 +29,18 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icons/icon.svg",
     apple: "/icons/icon.svg",
+  },
+  openGraph: {
+    title: "Pure Advance ERP",
+    description,
+    url: "https://pureadvance-erp.vercel.app",
+    siteName: "Pure Advance ERP",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Pure Advance ERP",
+    description,
   },
 };
 
