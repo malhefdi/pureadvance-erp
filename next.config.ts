@@ -8,64 +8,44 @@ const nextConfig: NextConfig = {
   },
 };
 
-// PWA setup — only apply in production builds with webpack
-const withPWA = (() => {
+// PWA only in production with webpack — skip in dev to avoid Turbopack conflict
+const isDev = process.env.NODE_ENV === "development";
+
+if (!isDev) {
   try {
-    const pwa = require("@ducanh2912/next-pwa").default;
-    return pwa({
+    const withPWA = require("@ducanh2912/next-pwa").default;
+    module.exports = withPWA({
       dest: "public",
-      disable: process.env.NODE_ENV === "development",
+      disable: false,
       register: true,
       skipWaiting: true,
       cacheOnFrontEndNav: true,
       aggressiveFrontEndNavCaching: true,
       reloadOnOnline: true,
-      fallbacks: {
-        document: "/offline",
-      },
+      fallbacks: { document: "/offline" },
       workboxOptions: {
         runtimeCaching: [
           {
             urlPattern: /\.(?:js|css|woff2?)$/i,
             handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "static-assets",
-              expiration: { maxEntries: 50, maxAgeSeconds: 30 * 24 * 60 * 60 },
-            },
+            options: { cacheName: "static-assets", expiration: { maxEntries: 50, maxAgeSeconds: 30 * 24 * 60 * 60 } },
           },
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
             handler: "CacheFirst",
-            options: {
-              cacheName: "images",
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 24 * 60 * 60 },
-            },
+            options: { cacheName: "images", expiration: { maxEntries: 100, maxAgeSeconds: 60 * 24 * 60 * 60 } },
           },
           {
             urlPattern: /\/api\/.*/i,
             handler: "NetworkFirst",
-            options: {
-              cacheName: "api-cache",
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 50, maxAgeSeconds: 5 * 60 },
-            },
-          },
-          {
-            urlPattern: /\/_next\/data\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "next-data",
-              networkTimeoutSeconds: 3,
-              expiration: { maxEntries: 30, maxAgeSeconds: 10 * 60 },
-            },
+            options: { cacheName: "api-cache", networkTimeoutSeconds: 5, expiration: { maxEntries: 50, maxAgeSeconds: 5 * 60 } },
           },
         ],
       },
-    });
+    })(nextConfig);
   } catch {
-    // PWA plugin not available — return identity
-    return (config: NextConfig) => config;
+    module.exports = nextConfig;
   }
-})();
-
-export default withPWA(nextConfig);
+} else {
+  module.exports = nextConfig;
+}
