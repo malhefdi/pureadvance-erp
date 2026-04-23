@@ -1,0 +1,26 @@
+{
+  "name": "Pure Advance ERP",
+  "short_name": "PA ERP",
+  "description": "Pure Advance Manufacturing ERP — Bt Biopesticide Production Management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#6d28d9",
+  "orientation": "any",
+  "scope": "/",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

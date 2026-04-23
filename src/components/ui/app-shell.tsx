@@ -1,6 +1,7 @@
 'use client';
 
 import { Sidebar, SidebarProvider, useSidebar } from '@/components/ui/sidebar';
+import { PWAInstallPrompt, OfflineIndicator } from '@/components/pwa/install-prompt';
 import { cn } from '@/lib/utils';
 
 function MainContent({ children }: { children: React.ReactNode }) {
@@ -19,8 +20,10 @@ function MainContent({ children }: { children: React.ReactNode }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
+      <OfflineIndicator />
       <Sidebar />
       <MainContent>{children}</MainContent>
+      <PWAInstallPrompt />
     </SidebarProvider>
   );
 }
