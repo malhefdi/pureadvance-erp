@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { ZonePIDRenderer } from './zone-pid-renderer';
-import { getZoneKPISummary, getZonePID, ZONE_LABELS } from '@/lib/pid-data';
+import { ZONE_LABELS } from '@/lib/pid-data';
+import { useZoneLiveData } from '@/hooks/use-zone-live-data';
 import type { ZonePIDData, ZoneKPISummary, EquipmentLiveData, AlarmSeverity } from '@/types/pid-zone';
 import { cn } from '@/lib/utils';
 import {
   Activity, AlertTriangle, Cog, Gauge, GitBranch, Layers, Package,
-  Play, Pause, Wrench, XCircle
+  Play, Pause, Wrench, XCircle, RotateCcw, Radio, Timer
 } from 'lucide-react';
 import { TrendChart } from './trend-chart';
 import { ControlLoopDiagram } from './control-loop-diagram';
@@ -405,8 +406,17 @@ export function ZonePIDPanel({ initialZone = 'z-upstream' }: { initialZone?: str
   const [showLabels, setShowLabels] = useState(true);
   const [showFlowAnimation, setShowFlowAnimation] = useState(true);
 
-  const zone = useMemo(() => getZonePID(activeZone), [activeZone]);
-  const kpi = useMemo(() => getZoneKPISummary(activeZone), [activeZone]);
+  const {
+    data: zone,
+    kpi,
+    isLive,
+    isPaused,
+    tickCount,
+    pause,
+    resume,
+    reset,
+    setInterval: setPollInterval,
+  } = useZoneLiveData(activeZone, { interval: 2000, autoStart: true, simulate: true });
 
   if (!zone || !kpi) {
     return (
@@ -427,7 +437,56 @@ export function ZonePIDPanel({ initialZone = 'z-upstream' }: { initialZone?: str
   return (
     <div className="space-y-4">
       {/* Zone Selector */}
-      <ZoneSelector activeZone={activeZone} onZoneChange={setActiveZone} />
+      <ZoneSelector activeZone={activeZone} onZoneChange={(id) => { setActiveZone(id); setSelectedId(null); }} />
+
+      {/* Live Data Controls */}
+      <div className="flex items-center justify-between bg-zinc-900/30 rounded-lg border border-zinc-800/50 px-3 py-2">
+        <div className="flex items-center gap-3">
+          {/* Live indicator */}
+          <div className="flex items-center gap-1.5">
+            {isLive && !isPaused ? (
+              <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+            ) : (
+              <Pause className="w-3 h-3 text-amber-400" />
+            )}
+            <span className={cn('text-[10px] font-bold uppercase', isLive && !isPaused ? 'text-emerald-400' : 'text-amber-400')}>
+              {isLive && !isPaused ? 'LIVE' : 'PAUSED'}
+            </span>
+          </div>
+          {/* Tick counter */}
+          <div className="flex items-center gap-1 text-zinc-500">
+            <Timer className="w-3 h-3" />
+            <span className="text-[10px] font-mono">{tickCount} ticks</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          {/* Speed selector */}
+          <select
+            onChange={e => setPollInterval(Number(e.target.value))}
+            defaultValue={2000}
+            className="bg-zinc-800 border border-zinc-700 rounded px-1.5 py-0.5 text-[10px] text-zinc-400"
+          >
+            <option value={500}>500ms</option>
+            <option value={1000}>1s</option>
+            <option value={2000}>2s</option>
+            <option value={5000}>5s</option>
+          </select>
+          {/* Pause/Resume */}
+          {isPaused ? (
+            <button onClick={resume} className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors">
+              <Play className="w-3 h-3" /> Resume
+            </button>
+          ) : (
+            <button onClick={pause} className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors">
+              <Pause className="w-3 h-3" /> Pause
+            </button>
+          )}
+          {/* Reset */}
+          <button onClick={reset} className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">
+            <RotateCcw className="w-3 h-3" /> Reset
+          </button>
+        </div>
+      </div>
 
       {/* KPI Header */}
       <KPIHeader kpi={kpi} zoneName={zone.zoneName} />
