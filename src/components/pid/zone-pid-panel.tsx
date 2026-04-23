@@ -7,8 +7,10 @@ import type { ZonePIDData, ZoneKPISummary, EquipmentLiveData, AlarmSeverity } fr
 import { cn } from '@/lib/utils';
 import {
   Activity, AlertTriangle, Cog, Gauge, GitBranch, Layers, Package,
-  Play, Pause, Wrench, XCircle, ChevronRight
+  Play, Pause, Wrench, XCircle
 } from 'lucide-react';
+import { TrendChart } from './trend-chart';
+import { ControlLoopDiagram } from './control-loop-diagram';
 
 // ============================================================
 // ALARM / STATUS HELPERS
@@ -265,36 +267,97 @@ function ControlLoopsList({ zone }: { zone: ZonePIDData }) {
 
 function ValveTable({ zone }: { zone: ZonePIDData }) {
   return (
-    <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="bg-zinc-800/50 text-zinc-500 uppercase tracking-wider">
-            <th className="text-left py-2 px-3">Valve</th>
-            <th className="text-left py-2 px-3">Position</th>
-            <th className="text-left py-2 px-3">% Open</th>
-            <th className="text-left py-2 px-3">Mode</th>
-          </tr>
-        </thead>
-        <tbody>
-          {zone.valvePositions.map(v => (
-            <tr key={v.valveId} className="border-t border-zinc-800/50">
-              <td className="py-2 px-3 font-mono font-bold text-violet-400">{v.valveId}</td>
-              <td className="py-2 px-3">
-                <span className={cn(
-                  'text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase',
-                  v.position === 'open' ? 'bg-emerald-500/20 text-emerald-400' :
-                  v.position === 'closed' ? 'bg-red-500/20 text-red-400' :
-                  'bg-amber-500/20 text-amber-400'
-                )}>
-                  {v.position}
-                </span>
-              </td>
-              <td className="py-2 px-3 font-mono text-zinc-300">{v.percentOpen}%</td>
-              <td className="py-2 px-3 text-zinc-400">{v.mode}</td>
+    <div className="space-y-3">
+      {/* Valve table */}
+      <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-zinc-800/50 text-zinc-500 uppercase tracking-wider">
+              <th className="text-left py-2 px-3">Valve</th>
+              <th className="text-left py-2 px-3">Position</th>
+              <th className="text-left py-2 px-3">% Open</th>
+              <th className="text-left py-2 px-3">Mode</th>
+              <th className="text-left py-2 px-3">Last Actuation</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {zone.valvePositions.map(v => (
+              <tr key={v.valveId} className="border-t border-zinc-800/50 hover:bg-zinc-800/20">
+                <td className="py-2 px-3 font-mono font-bold text-violet-400">{v.valveId}</td>
+                <td className="py-2 px-3">
+                  <span className={cn(
+                    'text-[10px] px-2 py-0.5 rounded-full font-bold uppercase',
+                    v.position === 'open' ? 'bg-emerald-500/20 text-emerald-400' :
+                    v.position === 'closed' ? 'bg-red-500/20 text-red-400' :
+                    'bg-amber-500/20 text-amber-400'
+                  )}>
+                    {v.position}
+                  </span>
+                </td>
+                <td className="py-2 px-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className={cn(
+                          'h-full rounded-full transition-all',
+                          v.position === 'open' ? 'bg-emerald-500' :
+                          v.position === 'closed' ? 'bg-red-500' :
+                          'bg-amber-500'
+                        )}
+                        style={{ width: `${v.percentOpen}%` }}
+                      />
+                    </div>
+                    <span className="font-mono text-zinc-300">{v.percentOpen}%</span>
+                  </div>
+                </td>
+                <td className="py-2 px-3">
+                  <span className={cn(
+                    'text-[10px] px-1.5 py-0.5 rounded font-medium',
+                    v.mode === 'auto' ? 'bg-blue-500/10 text-blue-400' : 'bg-zinc-700 text-zinc-400'
+                  )}>
+                    {v.mode}
+                  </span>
+                </td>
+                <td className="py-2 px-3 text-zinc-500 font-mono text-[10px]">
+                  {v.lastActuation || '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Valve state cards for quick visual */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {zone.valvePositions.map(v => {
+          const isOpen = v.position === 'open';
+          const isPartial = v.position === 'partial';
+          const color = isOpen ? 'border-emerald-500/30' : isPartial ? 'border-amber-500/30' : 'border-red-500/30';
+          const iconColor = isOpen ? 'text-emerald-400' : isPartial ? 'text-amber-400' : 'text-red-400';
+          return (
+            <div key={`card-${v.valveId}`} className={cn('bg-zinc-900/50 rounded-lg border p-3', color)}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-mono text-xs font-bold text-violet-400">{v.valveId}</span>
+                <span className={cn('text-[10px] font-bold uppercase', iconColor)}>{v.position}</span>
+              </div>
+              <div className="relative h-6 bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className={cn('absolute inset-y-0 left-0 rounded-full transition-all duration-500',
+                    isOpen ? 'bg-emerald-500/30' : isPartial ? 'bg-amber-500/30' : 'bg-red-500/30'
+                  )}
+                  style={{ width: `${v.percentOpen}%` }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-zinc-300">
+                  {v.percentOpen}%
+                </div>
+              </div>
+              <div className="mt-1 text-[9px] text-zinc-500 text-center">
+                {v.mode === 'auto' ? '⚡ Auto' : '👆 Manual'}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -434,14 +497,35 @@ export function ZonePIDPanel({ initialZone = 'z-upstream' }: { initialZone?: str
         <EquipmentTable zone={zone} selectedId={selectedId} onSelect={(_, id) => setSelectedId(id)} />
       )}
 
-      {/* Instruments Tab */}
+      {/* Instruments Tab — with trend charts */}
       {activeTab === 'instruments' && (
-        <InstrumentTable zone={zone} selectedId={selectedId} onSelect={(_, id) => setSelectedId(id)} />
+        <div className="space-y-3">
+          <InstrumentTable zone={zone} selectedId={selectedId} onSelect={(_, id) => setSelectedId(id)} />
+          {/* Trend Charts Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {zone.instrumentValues
+              .filter(v => v.trend && v.trend.length >= 2)
+              .filter(v => v.alarmState !== 'normal' || selectedId === v.instrumentId)
+              .slice(0, 6)
+              .map(val => (
+                <TrendChart key={val.instrumentId} data={val} />
+              ))}
+          </div>
+        </div>
       )}
 
-      {/* Control Loops Tab */}
+      {/* Control Loops Tab — with PID block diagrams */}
       {activeTab === 'loops' && (
-        <ControlLoopsList zone={zone} />
+        <div className="space-y-3">
+          {zone.controlLoops.map(loop => (
+            <ControlLoopDiagram
+              key={loop.id}
+              loop={loop}
+              instrumentValues={zone.instrumentValues}
+              equipmentStatus={zone.equipmentStatus}
+            />
+          ))}
+        </div>
       )}
 
       {/* Valves Tab */}
@@ -490,26 +574,38 @@ function SelectedItemDetail({ zone, selectedId, onClose }: {
       )}
 
       {inst && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-          <DetailCard label="Tag" value={inst.tag} />
-          <DetailCard label="Variable" value={inst.variable} />
-          <DetailCard label="Function" value={inst.function} />
-          <DetailCard label="Range" value={inst.range || '—'} />
-          <DetailCard label="Signal" value={inst.signal || '—'} />
-          <DetailCard label="Vendor" value={inst.vendor || '—'} />
-          <DetailCard label="Model" value={inst.model || '—'} />
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <DetailCard label="Tag" value={inst.tag} />
+            <DetailCard label="Variable" value={inst.variable} />
+            <DetailCard label="Function" value={inst.function} />
+            <DetailCard label="Range" value={inst.range || '—'} />
+            <DetailCard label="Signal" value={inst.signal || '—'} />
+            <DetailCard label="Vendor" value={inst.vendor || '—'} />
+            <DetailCard label="Model" value={inst.model || '—'} />
+            {(() => {
+              const val = zone.instrumentValues.find(v => v.instrumentId === inst.id);
+              if (!val) return null;
+              return (
+                <>
+                  <DetailCard label="Value" value={`${val.value.toFixed(1)} ${val.unit}`} />
+                  <DetailCard label="Setpoint" value={val.setpoint !== undefined ? `${val.setpoint} ${val.unit}` : '—'} />
+                  <DetailCard label="Alarm" value={val.alarmState} highlight={val.alarmState !== 'normal'} />
+                </>
+              );
+            })()}
+          </div>
+          {/* Trend chart for selected instrument */}
           {(() => {
             const val = zone.instrumentValues.find(v => v.instrumentId === inst.id);
-            if (!val) return null;
+            if (!val || !val.trend || val.trend.length < 2) return null;
             return (
-              <>
-                <DetailCard label="Value" value={`${val.value.toFixed(1)} ${val.unit}`} />
-                <DetailCard label="Setpoint" value={val.setpoint !== undefined ? `${val.setpoint} ${val.unit}` : '—'} />
-                <DetailCard label="Alarm" value={val.alarmState} highlight={val.alarmState !== 'normal'} />
-              </>
+              <div className="mt-3">
+                <TrendChart data={val} width={500} height={120} />
+              </div>
             );
           })()}
-        </div>
+        </>
       )}
     </div>
   );

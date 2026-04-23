@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { ALL_SYMBOLS, PIPING_LINES } from '@/lib/pid-symbols';
 import type { PIDEquipment, PIDInstrument, PIDControlLoop, PIDConnection } from '@/types/pid';
 import type {
@@ -33,47 +33,40 @@ const EQUIPMENT_STATUS_COLORS: Record<string, string> = {
 };
 
 // ============================================================
-// PROPS
+// VIEWBOX ANIMATION
 // ============================================================
 
-interface ZonePIDRendererProps {
-  zone: ZonePIDData;
-  selectedId?: string | null;
-  onSelect?: (type: string, id: string) => void;
-  showInstruments?: boolean;
-  showConnections?: boolean;
-  showLabels?: boolean;
-  showFlowAnimation?: boolean;
-}
+function animateViewBox(
+  svgRef: React.RefObject<SVGSVGElement | null>,
+  targetVB: { x: number; y: number; width: number; height: number },
+  duration = 400
+) {
+  const svg = svgRef.current;
+  if (!svg) return;
 
-// ============================================================
-// HELPERS
-// ============================================================
+  const currentVB = svg.viewBox.baseVal;
+  const start = { x: currentVB.x, y: currentVB.y, width: currentVB.width, height: currentVB.height };
+  const startTime = performance.now();
 
-function getEquipmentStatus(equipmentId: string, statusData: EquipmentLiveData[]): EquipmentLiveData | undefined {
-  return statusData.find(s => s.equipmentId === equipmentId);
-}
+  const animate = (now: number) => {
+    const elapsed = now - startTime;
+    const t = Math.min(1, elapsed / duration);
+    // Ease out cubic
+    const ease = 1 - Math.pow(1 - t, 3);
 
-function getInstrumentValue(instrumentId: string, values: InstrumentLiveData[]): InstrumentLiveData | undefined {
-  return values.find(v => v.instrumentId === instrumentId);
-}
+    currentVB.x = start.x + (targetVB.x - start.x) * ease;
+    currentVB.y = start.y + (targetVB.y - start.y) * ease;
+    currentVB.width = start.width + (targetVB.width - start.width) * ease;
+    currentVB.height = start.height + (targetVB.height - start.height) * ease;
 
-function getPipeFlow(connectionId: string, pipeData: PipeLiveData[]): PipeLiveData | undefined {
-  return pipeData.find(p => p.connectionId === connectionId);
-}
+    if (t < 1) requestAnimationFrame(animate);
+  };
 
-function getLineStyle(lineType: string) {
-  return PIPING_LINES.find(l => l.id === lineType) || { id: lineType, name: lineType, style: 'solid', color: '#a1a1aa', width: 2 };
-}
-
-function formatValue(value: number, unit: string): string {
-  if (unit === '%' || unit === 'rpm') return `${Math.round(value)}${unit}`;
-  if (value >= 100) return `${Math.round(value)} ${unit}`;
-  return `${value.toFixed(1)} ${unit}`;
+  requestAnimationFrame(animate);
 }
 
 // ============================================================
-// SPARKLINE COMPONENT
+// SPARKLINE
 // ============================================================
 
 function Sparkline({ data, width = 40, height = 12, color = '#8b5cf6' }: { data: number[]; width?: number; height?: number; color?: string }) {
@@ -89,14 +82,86 @@ function Sparkline({ data, width = 40, height = 12, color = '#8b5cf6' }: { data:
 
   return (
     <svg width={width} height={height} className="inline-block align-middle ml-1">
-      <polyline
-        points={points}
-        fill="none"
-        stroke={color}
-        strokeWidth="1"
-        opacity="0.7"
-      />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1" opacity="0.7" />
     </svg>
+  );
+}
+
+// ============================================================
+// VALVE INDICATOR ON PIPES
+// ============================================================
+
+function ValveIndicator({ valve, conn }: { valve: ValveLiveData; conn: PIDConnection }) {
+  if (!conn.points || conn.points.length < 2) return null;
+  const mx = conn.points[Math.floor(conn.points.length / 2)];
+  const my = conn.points[Math.floor(conn.points.length / 2)];
+
+  const positionColor = valve.position === 'open' ? '#10b981' : valve.position === 'closed' ? '#ef4444' : '#f59e0b';
+
+  return (
+    <g>
+      {/* Valve body */}
+      <polygon
+        points={`${mx.x},${my.y - 6} ${mx.x - 5},${my.y} ${mx.x},${my.y + 6} ${mx.x + 5},${my.y}`}
+        fill="#0f0f0f"
+        stroke={positionColor}
+        strokeWidth="1.5"
+      />
+      {/* Position indicator */}
+      <circle cx={mx.x} cy={my.y} r="2" fill={positionColor} />
+      {/* Mode badge */}
+      {valve.mode === 'auto' && (
+        <text x={mx.x + 8} y={my.y - 4} fill="#6b7280" fontSize="5" fontFamily="monospace">A</text>
+      )}
+      {/* % open */}
+      <text x={mx.x + 8} y={my.y + 6} fill={positionColor} fontSize="6" fontFamily="monospace">
+        {valve.percentOpen}%
+      </text>
+    </g>
+  );
+}
+
+// ============================================================
+// INTER-ZONE FLOW REFERENCE
+// ============================================================
+
+function InterZoneArrow({ conn, zone }: { conn: PIDConnection; zone: ZonePIDData }) {
+  if (!conn.points || conn.points.length < 2) return null;
+  const lastPt = conn.points[conn.points.length - 1];
+  const isOffRight = lastPt.x >= zone.viewBox.width - 20;
+  const isOffLeft = lastPt.x <= 20;
+  const isOffBottom = lastPt.y >= zone.viewBox.height - 20;
+  const isOffTop = lastPt.y <= 20;
+
+  if (!isOffRight && !isOffLeft && !isOffBottom && !isOffTop) return null;
+
+  const label = conn.label || conn.diameter || '';
+  let arrowAngle = 0;
+  if (isOffRight) arrowAngle = 0;
+  else if (isOffLeft) arrowAngle = 180;
+  else if (isOffBottom) arrowAngle = 90;
+  else arrowAngle = -90;
+
+  return (
+    <g transform={`translate(${lastPt.x}, ${lastPt.y})`}>
+      <polygon
+        points="0,-4 8,0 0,4"
+        fill="#8b5cf6"
+        opacity="0.6"
+        transform={`rotate(${arrowAngle})`}
+      />
+      <text
+        x={isOffRight ? 12 : isOffLeft ? -12 : 0}
+        y={isOffBottom ? 12 : isOffTop ? -8 : 4}
+        textAnchor={isOffRight ? 'start' : isOffLeft ? 'end' : 'middle'}
+        fill="#8b5cf6"
+        fontSize="6"
+        fontFamily="monospace"
+        opacity="0.7"
+      >
+        {label}
+      </text>
+    </g>
   );
 }
 
@@ -118,16 +183,17 @@ function EquipmentSymbol({ eq, status, isSelected, onClick }: {
       case 'bioreactor':
         return (
           <>
-            {/* Vessel body */}
             <rect x={eq.x + 8} y={eq.y + 12} width={eq.width - 16} height={eq.height - 30} rx="6" fill="none" stroke="#52525b" strokeWidth="1.5" />
-            {/* Agitator shaft */}
             <line x1={eq.x + eq.width / 2} y1={eq.y + 2} x2={eq.x + eq.width / 2} y2={eq.y + 12} stroke="#52525b" strokeWidth="1.5" />
-            {/* Impeller 1 */}
             <line x1={eq.x + eq.width / 2 - 10} y1={eq.y + eq.height * 0.4} x2={eq.x + eq.width / 2 + 10} y2={eq.y + eq.height * 0.4} stroke="#52525b" strokeWidth="1" />
-            {/* Impeller 2 */}
             <line x1={eq.x + eq.width / 2 - 8} y1={eq.y + eq.height * 0.55} x2={eq.x + eq.width / 2 + 8} y2={eq.y + eq.height * 0.55} stroke="#52525b" strokeWidth="1" />
-            {/* Bottom curve */}
             <path d={`M${eq.x + 8},${eq.y + eq.height - 18} Q${eq.x + eq.width / 2},${eq.y + eq.height - 8} ${eq.x + eq.width - 8},${eq.y + eq.height - 18}`} fill="none" stroke="#52525b" strokeWidth="1" />
+            {/* Running indicator — agitator spin */}
+            {status?.status === 'running' && (
+              <circle cx={eq.x + eq.width / 2} cy={eq.y + eq.height * 0.3} r="2" fill="#10b981" opacity="0.6">
+                <animate attributeName="opacity" values="0.6;0.2;0.6" dur="1.5s" repeatCount="indefinite" />
+              </circle>
+            )}
           </>
         );
 
@@ -142,7 +208,6 @@ function EquipmentSymbol({ eq, status, isSelected, onClick }: {
                 <line x1={eq.x + eq.width / 2 - 6} y1={eq.y + eq.height * 0.5} x2={eq.x + eq.width / 2 + 6} y2={eq.y + eq.height * 0.5} stroke="#52525b" strokeWidth="1" />
               </>
             )}
-            {/* Level indicator (if live data) */}
             {status && (
               <rect
                 x={eq.x + 7}
@@ -164,6 +229,11 @@ function EquipmentSymbol({ eq, status, isSelected, onClick }: {
             <circle cx={eq.x + eq.width / 2} cy={eq.y + eq.height / 2} r={Math.min(eq.width, eq.height) / 3} fill="none" stroke="#52525b" strokeWidth="1.5" />
             {eq.symbolId === 'pump-centrifugal' && (
               <path d={`M${eq.x + eq.width / 2 - 5},${eq.y + eq.height / 2} L${eq.x + eq.width / 2 + 8},${eq.y + eq.height / 2 - 5} L${eq.x + eq.width / 2 + 8},${eq.y + eq.height / 2 + 5} Z`} fill="#52525b" fillOpacity={0.3} stroke="#52525b" strokeWidth="0.5" />
+            )}
+            {status?.status === 'running' && (
+              <circle cx={eq.x + eq.width / 2} cy={eq.y + eq.height / 2} r="2" fill="#10b981" opacity="0.6">
+                <animate attributeName="opacity" values="0.6;0.2;0.6" dur="0.8s" repeatCount="indefinite" />
+              </circle>
             )}
           </>
         );
@@ -201,7 +271,6 @@ function EquipmentSymbol({ eq, status, isSelected, onClick }: {
           <>
             <rect x={eq.x + 5} y={eq.y + eq.height * 0.3} width={eq.width - 10} height={eq.height * 0.6} rx="2" fill="none" stroke="#52525b" strokeWidth="1" />
             <path d={`M${eq.x + 10},${eq.y + eq.height * 0.3} Q${eq.x + eq.width / 2},${eq.y + 5} ${eq.x + eq.width - 10},${eq.y + eq.height * 0.3}`} fill="none" stroke="#52525b" strokeWidth="1" />
-            {/* Steam lines */}
             {status?.status === 'running' && (
               <>
                 <path d={`M${eq.x + eq.width * 0.35},${eq.y + 3} Q${eq.x + eq.width * 0.3},${eq.y - 5} ${eq.x + eq.width * 0.35},${eq.y - 10}`} fill="none" stroke="#94a3b8" strokeWidth="0.5" opacity={0.4} />
@@ -239,9 +308,7 @@ function EquipmentSymbol({ eq, status, isSelected, onClick }: {
 
       case 'spray-dryer':
         return (
-          <>
-            <path d={`M${eq.x + 10},${eq.y + 5} L${eq.x + eq.width - 10},${eq.y + 5} Q${eq.x + eq.width - 5},${eq.y + eq.height / 2} ${eq.x + eq.width - 10},${eq.y + eq.height - 5} L${eq.x + 10},${eq.y + eq.height - 5} Q${eq.x + 5},${eq.y + eq.height / 2} ${eq.x + 10},${eq.y + 5} Z`} fill="none" stroke="#52525b" strokeWidth="1" />
-          </>
+          <path d={`M${eq.x + 10},${eq.y + 5} L${eq.x + eq.width - 10},${eq.y + 5} Q${eq.x + eq.width - 5},${eq.y + eq.height / 2} ${eq.x + eq.width - 10},${eq.y + eq.height - 5} L${eq.x + 10},${eq.y + eq.height - 5} Q${eq.x + 5},${eq.y + eq.height / 2} ${eq.x + 10},${eq.y + 5} Z`} fill="none" stroke="#52525b" strokeWidth="1" />
         );
 
       case 'cold-storage':
@@ -249,7 +316,6 @@ function EquipmentSymbol({ eq, status, isSelected, onClick }: {
           <>
             <rect x={eq.x + 3} y={eq.y + 3} width={eq.width - 6} height={eq.height - 6} rx="2" fill="none" stroke="#52525b" strokeWidth="1" />
             <line x1={eq.x + 3} y1={eq.y + eq.height * 0.45} x2={eq.x + eq.width - 3} y2={eq.y + eq.height * 0.45} stroke="#3b82f6" strokeWidth="0.5" opacity={0.4} />
-            {/* Snowflake */}
             <text x={eq.x + eq.width / 2} y={eq.y + eq.height / 2 + 3} textAnchor="middle" fill="#3b82f6" fontSize="8" opacity={0.5}>❄</text>
           </>
         );
@@ -265,49 +331,48 @@ function EquipmentSymbol({ eq, status, isSelected, onClick }: {
 
       // Valves
       case 'valve-gate':
+        return (
+          <path d={`M${eq.x + 5},${eq.y + eq.height / 2} L${eq.x + eq.width * 0.35},${eq.y + eq.height / 2} L${eq.x + eq.width / 2},${eq.y + 10} L${eq.x + eq.width * 0.65},${eq.y + eq.height / 2} L${eq.x + eq.width - 5},${eq.y + eq.height / 2}`} fill="none" stroke="#52525b" strokeWidth="1.5" />
+        );
+
       case 'valve-ball':
+        return (
+          <>
+            <line x1={eq.x + 5} y1={eq.y + eq.height / 2} x2={eq.x + 15} y2={eq.y + eq.height / 2} stroke="#52525b" strokeWidth="1.5" />
+            <circle cx={eq.x + eq.width / 2} cy={eq.y + eq.height / 2} r={Math.min(eq.width, eq.height) / 4} fill="none" stroke="#52525b" strokeWidth="1.5" />
+            <line x1={eq.x + eq.width - 15} y1={eq.y + eq.height / 2} x2={eq.x + eq.width - 5} y2={eq.y + eq.height / 2} stroke="#52525b" strokeWidth="1.5" />
+          </>
+        );
+
       case 'valve-check':
+        return (
+          <>
+            <line x1={eq.x + 5} y1={eq.y + eq.height / 2} x2={eq.x + 15} y2={eq.y + eq.height / 2} stroke="#52525b" strokeWidth="1.5" />
+            <polygon points={`${eq.x + 15},${eq.y + eq.height / 2} ${eq.x + eq.width / 2},${eq.y + 10} ${eq.x + eq.width / 2},${eq.y + eq.height - 10}`} fill="none" stroke="#52525b" strokeWidth="1" />
+            <line x1={eq.x + eq.width / 2} y1={eq.y + eq.height / 2} x2={eq.x + eq.width - 5} y2={eq.y + eq.height / 2} stroke="#52525b" strokeWidth="1.5" />
+          </>
+        );
+
       case 'valve-control':
-      case 'valve-safety-relief':
       case 'valve-pneumatic':
         return (
           <>
-            {eq.symbolId === 'valve-gate' && (
-              <path d={`M${eq.x + 5},${eq.y + eq.height / 2} L${eq.x + eq.width * 0.35},${eq.y + eq.height / 2} L${eq.x + eq.width / 2},${eq.y + 10} L${eq.x + eq.width * 0.65},${eq.y + eq.height / 2} L${eq.x + eq.width - 5},${eq.y + eq.height / 2}`} fill="none" stroke="#52525b" strokeWidth="1.5" />
+            <path d={`M${eq.x + 5},${eq.y + eq.height * 0.55} L${eq.x + eq.width * 0.35},${eq.y + eq.height * 0.55} L${eq.x + eq.width / 2},${eq.y + eq.height * 0.35} L${eq.x + eq.width * 0.65},${eq.y + eq.height * 0.55} L${eq.x + eq.width - 5},${eq.y + eq.height * 0.55}`} fill="none" stroke="#52525b" strokeWidth="1.5" />
+            <line x1={eq.x + eq.width / 2} y1={eq.y + eq.height * 0.35} x2={eq.x + eq.width / 2} y2={eq.y + 5} stroke="#52525b" strokeWidth="1" />
+            <rect x={eq.x + eq.width / 2 - 8} y={eq.y + 2} width={16} height={6} rx="1" fill="none" stroke="#52525b" strokeWidth="1" />
+            {eq.symbolId === 'valve-pneumatic' && (
+              <circle cx={eq.x + eq.width / 2} cy={eq.y + 5} r={3} fill="none" stroke="#a855f7" strokeWidth="0.5" />
             )}
-            {eq.symbolId === 'valve-ball' && (
-              <>
-                <line x1={eq.x + 5} y1={eq.y + eq.height / 2} x2={eq.x + 15} y2={eq.y + eq.height / 2} stroke="#52525b" strokeWidth="1.5" />
-                <circle cx={eq.x + eq.width / 2} cy={eq.y + eq.height / 2} r={Math.min(eq.width, eq.height) / 4} fill="none" stroke="#52525b" strokeWidth="1.5" />
-                <line x1={eq.x + eq.width - 15} y1={eq.y + eq.height / 2} x2={eq.x + eq.width - 5} y2={eq.y + eq.height / 2} stroke="#52525b" strokeWidth="1.5" />
-              </>
-            )}
-            {eq.symbolId === 'valve-check' && (
-              <>
-                <line x1={eq.x + 5} y1={eq.y + eq.height / 2} x2={eq.x + 15} y2={eq.y + eq.height / 2} stroke="#52525b" strokeWidth="1.5" />
-                <polygon points={`${eq.x + 15},${eq.y + eq.height / 2} ${eq.x + eq.width / 2},${eq.y + 10} ${eq.x + eq.width / 2},${eq.y + eq.height - 10}`} fill="none" stroke="#52525b" strokeWidth="1" />
-                <line x1={eq.x + eq.width / 2} y1={eq.y + eq.height / 2} x2={eq.x + eq.width - 5} y2={eq.y + eq.height / 2} stroke="#52525b" strokeWidth="1.5" />
-              </>
-            )}
-            {(eq.symbolId === 'valve-control' || eq.symbolId === 'valve-pneumatic') && (
-              <>
-                <path d={`M${eq.x + 5},${eq.y + eq.height * 0.55} L${eq.x + eq.width * 0.35},${eq.y + eq.height * 0.55} L${eq.x + eq.width / 2},${eq.y + eq.height * 0.35} L${eq.x + eq.width * 0.65},${eq.y + eq.height * 0.55} L${eq.x + eq.width - 5},${eq.y + eq.height * 0.55}`} fill="none" stroke="#52525b" strokeWidth="1.5" />
-                {/* Actuator */}
-                <line x1={eq.x + eq.width / 2} y1={eq.y + eq.height * 0.35} x2={eq.x + eq.width / 2} y2={eq.y + 5} stroke="#52525b" strokeWidth="1" />
-                <rect x={eq.x + eq.width / 2 - 8} y={eq.y + 2} width={16} height={6} rx="1" fill="none" stroke="#52525b" strokeWidth="1" />
-                {eq.symbolId === 'valve-pneumatic' && (
-                  <circle cx={eq.x + eq.width / 2} cy={eq.y + 5} r={3} fill="none" stroke="#a855f7" strokeWidth="0.5" />
-                )}
-              </>
-            )}
-            {eq.symbolId === 'valve-safety-relief' && (
-              <>
-                <line x1={eq.x + 5} y1={eq.y + eq.height * 0.7} x2={eq.x + eq.width * 0.35} y2={eq.y + eq.height * 0.7} stroke="#52525b" strokeWidth="1.5" />
-                <polygon points={`${eq.x + eq.width * 0.35},${eq.y + eq.height * 0.7} ${eq.x + eq.width / 2},${eq.y + 15} ${eq.x + eq.width * 0.65},${eq.y + eq.height * 0.7}`} fill="none" stroke="#ef4444" strokeWidth="1.5" />
-                <line x1={eq.x + eq.width * 0.65} y1={eq.y + eq.height * 0.7} x2={eq.x + eq.width - 5} y2={eq.y + eq.height * 0.7} stroke="#52525b" strokeWidth="1.5" />
-                <line x1={eq.x + eq.width / 2} y1={eq.y + 15} x2={eq.x + eq.width / 2} y2={eq.y + 2} stroke="#ef4444" strokeWidth="1" />
-              </>
-            )}
+          </>
+        );
+
+      case 'valve-safety-relief':
+        return (
+          <>
+            <line x1={eq.x + 5} y1={eq.y + eq.height * 0.7} x2={eq.x + eq.width * 0.35} y2={eq.y + eq.height * 0.7} stroke="#52525b" strokeWidth="1.5" />
+            <polygon points={`${eq.x + eq.width * 0.35},${eq.y + eq.height * 0.7} ${eq.x + eq.width / 2},${eq.y + 15} ${eq.x + eq.width * 0.65},${eq.y + eq.height * 0.7}`} fill="none" stroke="#ef4444" strokeWidth="1.5" />
+            <line x1={eq.x + eq.width * 0.65} y1={eq.y + eq.height * 0.7} x2={eq.x + eq.width - 5} y2={eq.y + eq.height * 0.7} stroke="#52525b" strokeWidth="1.5" />
+            <line x1={eq.x + eq.width / 2} y1={eq.y + 15} x2={eq.x + eq.width / 2} y2={eq.y + 2} stroke="#ef4444" strokeWidth="1" />
           </>
         );
 
@@ -320,7 +385,6 @@ function EquipmentSymbol({ eq, status, isSelected, onClick }: {
 
   return (
     <g onClick={onClick} className="cursor-pointer">
-      {/* Selection highlight */}
       <rect
         x={eq.x - 4} y={eq.y - 4}
         width={eq.width + 8} height={eq.height + 8}
@@ -330,7 +394,6 @@ function EquipmentSymbol({ eq, status, isSelected, onClick }: {
         stroke={isSelected ? '#8b5cf6' : 'transparent'}
         strokeWidth="1"
       />
-      {/* Equipment body */}
       <rect
         x={eq.x} y={eq.y}
         width={eq.width} height={eq.height}
@@ -339,29 +402,19 @@ function EquipmentSymbol({ eq, status, isSelected, onClick }: {
         stroke={borderColor}
         strokeWidth={isSelected ? 2 : 1.5}
       />
-      {/* Symbol-specific drawing */}
       {renderSymbolBody()}
-      {/* Tag label */}
       <text x={eq.x + 4} y={eq.y - 5} fill="#a78bfa" fontSize="10" fontWeight="bold" fontFamily="monospace">
         {eq.tag}
       </text>
-      {/* Status dot */}
       {status && (
-        <circle
-          cx={eq.x + eq.width - 4}
-          cy={eq.y + 4}
-          r="3"
-          fill={statusColor}
-          stroke="#0f0f0f"
-          strokeWidth="1"
-        />
+        <circle cx={eq.x + eq.width - 4} cy={eq.y + 4} r="3" fill={statusColor} stroke="#0f0f0f" strokeWidth="1" />
       )}
     </g>
   );
 }
 
 // ============================================================
-// INSTRUMENT BUBBLE RENDERER
+// INSTRUMENT BUBBLE
 // ============================================================
 
 function InstrumentBubble({ inst, value, isSelected, onClick }: {
@@ -375,63 +428,30 @@ function InstrumentBubble({ inst, value, isSelected, onClick }: {
 
   return (
     <g onClick={onClick} className="cursor-pointer">
-      {/* Outer circle — ISA-5.1 field instrument */}
-      <circle
-        cx={inst.x} cy={inst.y}
-        r="16"
-        fill="#0f0f0f"
-        stroke={isSelected ? '#a78bfa' : alarmColors.border}
-        strokeWidth={isSelected ? 2 : 1.5}
-      />
-      {/* Inner circle — control room (double circle = controller) */}
+      <circle cx={inst.x} cy={inst.y} r="16" fill="#0f0f0f" stroke={isSelected ? '#a78bfa' : alarmColors.border} strokeWidth={isSelected ? 2 : 1.5} />
       {isControlRoom && (
-        <circle
-          cx={inst.x} cy={inst.y}
-          r="12"
-          fill="none"
-          stroke={isSelected ? '#a78bfa' : '#52525b'}
-          strokeWidth="0.5"
-        />
+        <circle cx={inst.x} cy={inst.y} r="12" fill="none" stroke={isSelected ? '#a78bfa' : '#52525b'} strokeWidth="0.5" />
       )}
-      {/* Alarm flash */}
       {value?.alarmState === 'critical' && (
-        <circle
-          cx={inst.x} cy={inst.y}
-          r="18"
-          fill="none"
-          stroke="#ef4444"
-          strokeWidth="1"
-          opacity={0.6}
-          className="animate-pulse"
-        />
+        <circle cx={inst.x} cy={inst.y} r="18" fill="none" stroke="#ef4444" strokeWidth="1" opacity={0.6} className="animate-pulse" />
       )}
-      {/* Tag text */}
       <text x={inst.x} y={inst.y + 2} textAnchor="middle" fill={alarmColors.text} fontSize="6" fontWeight="bold" fontFamily="monospace">
         {inst.tag}
       </text>
-      {/* Live value */}
       {value && (
         <text x={inst.x} y={inst.y + 30} textAnchor="middle" fill={alarmColors.border} fontSize="7" fontFamily="monospace">
-          {formatValue(value.value, value.unit)}
-          {value.trend && <Sparkline data={value.trend} color={alarmColors.border} />}
+          {value.value.toFixed(1)} {value.unit}
         </text>
       )}
-      {/* Signal line to equipment */}
       {inst.mountedOn && (
-        <line
-          x1={inst.x} y1={inst.y + 16}
-          x2={inst.x} y2={inst.y + 24}
-          stroke="#f97316"
-          strokeWidth="1"
-          strokeDasharray="2,2"
-        />
+        <line x1={inst.x} y1={inst.y + 16} x2={inst.x} y2={inst.y + 24} stroke="#f97316" strokeWidth="1" strokeDasharray="2,2" />
       )}
     </g>
   );
 }
 
 // ============================================================
-// PIPE CONNECTION RENDERER
+// PIPE CONNECTION
 // ============================================================
 
 function PipeConnection({ conn, flowData, showAnimation, equipment }: {
@@ -440,10 +460,8 @@ function PipeConnection({ conn, flowData, showAnimation, equipment }: {
   showAnimation: boolean;
   equipment: PIDEquipment[];
 }) {
-  const lineStyle = getLineStyle(conn.lineType);
+  const lineStyle = PIPING_LINES.find(l => l.id === conn.lineType) || { id: conn.lineType, name: conn.lineType, style: 'solid', color: '#a1a1aa', width: 2 };
   const dashArray = lineStyle.style === 'dashed' ? '8,4' : lineStyle.style === 'dotted' ? '2,4' : undefined;
-
-  // Build path from waypoints
   const allPoints = conn.points || [];
   if (allPoints.length < 2) return null;
 
@@ -451,56 +469,26 @@ function PipeConnection({ conn, flowData, showAnimation, equipment }: {
 
   return (
     <g>
-      {/* Pipe line */}
-      <path
-        d={pathD}
-        fill="none"
-        stroke={lineStyle.color}
-        strokeWidth={lineStyle.width}
-        strokeDasharray={dashArray}
-        opacity={flowData?.flowing ? 0.9 : 0.4}
-      />
-      {/* Flow animation */}
+      <path d={pathD} fill="none" stroke={lineStyle.color} strokeWidth={lineStyle.width} strokeDasharray={dashArray} opacity={flowData?.flowing ? 0.9 : 0.4} />
       {showAnimation && flowData?.flowing && flowData.animated && (
-        <path
-          d={pathD}
-          fill="none"
-          stroke={lineStyle.color}
-          strokeWidth={lineStyle.width * 0.5}
-          strokeDasharray="4,12"
-          opacity={0.6}
-        >
-          <animate
-            attributeName="stroke-dashoffset"
-            values="16;0"
-            dur="1s"
-            repeatCount="indefinite"
-          />
+        <path d={pathD} fill="none" stroke={lineStyle.color} strokeWidth={lineStyle.width * 0.5} strokeDasharray="4,12" opacity={0.6}>
+          <animate attributeName="stroke-dashoffset" values="16;0" dur="1s" repeatCount="indefinite" />
         </path>
       )}
-      {/* Diameter label (midpoint) */}
       {conn.diameter && allPoints.length >= 2 && (
         <text
           x={(allPoints[0].x + allPoints[allPoints.length - 1].x) / 2}
           y={(allPoints[0].y + allPoints[allPoints.length - 1].y) / 2 - 6}
-          textAnchor="middle"
-          fill="#52525b"
-          fontSize="7"
-          fontFamily="monospace"
+          textAnchor="middle" fill="#52525b" fontSize="7" fontFamily="monospace"
         >
           {conn.diameter}
         </text>
       )}
-      {/* Flow rate label */}
       {flowData?.flowRate && allPoints.length >= 2 && (
         <text
           x={(allPoints[0].x + allPoints[allPoints.length - 1].x) / 2}
           y={(allPoints[0].y + allPoints[allPoints.length - 1].y) / 2 + 8}
-          textAnchor="middle"
-          fill={lineStyle.color}
-          fontSize="7"
-          fontFamily="monospace"
-          opacity={0.7}
+          textAnchor="middle" fill={lineStyle.color} fontSize="7" fontFamily="monospace" opacity={0.7}
         >
           {flowData.flowRate.toFixed(1)} L/min
         </text>
@@ -510,7 +498,7 @@ function PipeConnection({ conn, flowData, showAnimation, equipment }: {
 }
 
 // ============================================================
-// TITLE BLOCK (ISA-5.1)
+// TITLE BLOCK
 // ============================================================
 
 function TitleBlock({ zone }: { zone: ZonePIDData }) {
@@ -521,33 +509,29 @@ function TitleBlock({ zone }: { zone: ZonePIDData }) {
       <line x1={0} y1={32} x2={210} y2={32} stroke="#27272a" strokeWidth="0.5" />
       <line x1={70} y1={15} x2={70} y2={50} stroke="#27272a" strokeWidth="0.5" />
       <line x1={140} y1={15} x2={140} y2={50} stroke="#27272a" strokeWidth="0.5" />
-
-      {/* Drawing title */}
-      <text x={6} y={11} fill="#71717a" fontSize="7" fontWeight="bold" fontFamily="monospace">
-        {zone.drawingNumber}
-      </text>
-      <text x={76} y={11} fill="#52525b" fontSize="6" fontFamily="monospace">
-        {zone.revision}
-      </text>
-      <text x={146} y={11} fill="#52525b" fontSize="6" fontFamily="monospace">
-        NTS
-      </text>
-
-      {/* Zone info */}
-      <text x={6} y={26} fill="#a78bfa" fontSize="8" fontWeight="bold" fontFamily="system-ui">
-        {zone.zoneName}
-      </text>
-      <text x={6} y={44} fill="#52525b" fontSize="6" fontFamily="monospace">
-        Pure Advance ERP
-      </text>
-      <text x={76} y={44} fill="#52525b" fontSize="6" fontFamily="monospace">
-        {zone.isoClass || '—'}
-      </text>
-      <text x={146} y={44} fill="#52525b" fontSize="6" fontFamily="monospace">
-        Hermes
-      </text>
+      <text x={6} y={11} fill="#71717a" fontSize="7" fontWeight="bold" fontFamily="monospace">{zone.drawingNumber}</text>
+      <text x={76} y={11} fill="#52525b" fontSize="6" fontFamily="monospace">{zone.revision}</text>
+      <text x={146} y={11} fill="#52525b" fontSize="6" fontFamily="monospace">NTS</text>
+      <text x={6} y={26} fill="#a78bfa" fontSize="8" fontWeight="bold" fontFamily="system-ui">{zone.zoneName}</text>
+      <text x={6} y={44} fill="#52525b" fontSize="6" fontFamily="monospace">Pure Advance ERP</text>
+      <text x={76} y={44} fill="#52525b" fontSize="6" fontFamily="monospace">{zone.isoClass || '—'}</text>
+      <text x={146} y={44} fill="#52525b" fontSize="6" fontFamily="monospace">Hermes</text>
     </g>
   );
+}
+
+// ============================================================
+// PROPS
+// ============================================================
+
+interface ZonePIDRendererProps {
+  zone: ZonePIDData;
+  selectedId?: string | null;
+  onSelect?: (type: string, id: string) => void;
+  showInstruments?: boolean;
+  showConnections?: boolean;
+  showLabels?: boolean;
+  showFlowAnimation?: boolean;
 }
 
 // ============================================================
@@ -566,6 +550,41 @@ export function ZonePIDRenderer({
   const svgRef = useRef<SVGSVGElement>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const originalVB = useRef(zone.viewBox);
+
+  // Reset view when zone changes
+  useEffect(() => {
+    originalVB.current = zone.viewBox;
+    if (svgRef.current) {
+      const vb = svgRef.current.viewBox.baseVal;
+      vb.x = zone.viewBox.x;
+      vb.y = zone.viewBox.y;
+      vb.width = zone.viewBox.width;
+      vb.height = zone.viewBox.height;
+    }
+  }, [zone.zoneId]);
+
+  // Click-to-zoom: zoom into selected equipment
+  useEffect(() => {
+    if (!selectedId || !svgRef.current) return;
+    const eq = zone.equipment.find(e => e.id === selectedId);
+    if (!eq) return;
+
+    // Calculate viewBox centered on equipment with padding
+    const padding = 120;
+    const centerX = eq.x + eq.width / 2;
+    const centerY = eq.y + eq.height / 2;
+    const aspect = zone.viewBox.width / zone.viewBox.height;
+    const vbHeight = Math.max(eq.height + padding * 2, 200);
+    const vbWidth = vbHeight * aspect;
+
+    animateViewBox(svgRef, {
+      x: centerX - vbWidth / 2,
+      y: centerY - vbHeight / 2,
+      width: vbWidth,
+      height: vbHeight,
+    });
+  }, [selectedId]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -573,8 +592,11 @@ export function ZonePIDRenderer({
     setZoom(z => Math.max(0.5, Math.min(3, z * delta)));
   }, []);
 
-  // Look up equipment symbol
-  const getSymbol = (symbolId: string) => ALL_SYMBOLS.find(s => s.id === symbolId);
+  const handleResetView = useCallback(() => {
+    animateViewBox(svgRef, originalVB.current);
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
 
   return (
     <div className="relative bg-zinc-950/50 rounded-xl border border-zinc-800 overflow-hidden">
@@ -583,7 +605,7 @@ export function ZonePIDRenderer({
         <button onClick={() => setZoom(z => Math.min(3, z * 1.2))} className="px-2 py-1 text-xs text-zinc-400 hover:text-white transition-colors">+</button>
         <span className="text-xs text-zinc-500 font-mono w-10 text-center">{Math.round(zoom * 100)}%</span>
         <button onClick={() => setZoom(z => Math.max(0.5, z * 0.8))} className="px-2 py-1 text-xs text-zinc-400 hover:text-white transition-colors">−</button>
-        <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} className="px-2 py-1 text-xs text-zinc-400 hover:text-white transition-colors border-l border-zinc-700">Reset</button>
+        <button onClick={handleResetView} className="px-2 py-1 text-xs text-zinc-400 hover:text-white transition-colors border-l border-zinc-700">Reset</button>
       </div>
 
       {/* SVG Canvas */}
@@ -595,32 +617,19 @@ export function ZonePIDRenderer({
         onWheel={handleWheel}
       >
         <defs>
-          {/* Grid pattern */}
           <pattern id={`pid-grid-${zone.zoneId}`} width="20" height="20" patternUnits="userSpaceOnUse">
             <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1a1a1f" strokeWidth="0.5" />
           </pattern>
-          {/* Major grid */}
           <pattern id={`pid-grid-major-${zone.zoneId}`} width="100" height="100" patternUnits="userSpaceOnUse">
             <rect width="100" height="100" fill={`url(#pid-grid-${zone.zoneId})`} />
             <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#222228" strokeWidth="0.8" />
           </pattern>
-          {/* Flow animation marker */}
-          <marker id={`flow-arrow-${zone.zoneId}`} markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
-            <polygon points="0 0, 6 2, 0 4" fill="#8b5cf6" opacity="0.5" />
-          </marker>
         </defs>
 
-        {/* Background grid */}
-        <rect
-          width={zone.viewBox.width}
-          height={zone.viewBox.height}
-          fill={`url(#pid-grid-major-${zone.zoneId})`}
-          rx="0"
-        />
+        <rect width={zone.viewBox.width} height={zone.viewBox.height} fill={`url(#pid-grid-major-${zone.zoneId})`} />
 
-        {/* Scale transform */}
-        <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-          {/* Pipe connections */}
+        <g>
+          {/* Connections */}
           {showConnections && zone.connections.map(conn => (
             <PipeConnection
               key={conn.id}
@@ -631,9 +640,20 @@ export function ZonePIDRenderer({
             />
           ))}
 
+          {/* Valve indicators on pipes */}
+          {zone.valvePositions.map(valve => {
+            const conn = zone.connections.find(c => c.id === valve.valveId);
+            if (!conn) return null;
+            return <ValveIndicator key={valve.valveId} valve={valve} conn={conn} />;
+          })}
+
+          {/* Inter-zone flow references */}
+          {zone.connections.filter(c => c.to.equipmentId.startsWith('EXT-')).map(conn => (
+            <InterZoneArrow key={conn.id} conn={conn} zone={zone} />
+          ))}
+
           {/* Equipment */}
           {zone.equipment.map(eq => {
-            const symbol = getSymbol(eq.symbolId);
             const status = zone.equipmentStatus.find(s => s.equipmentId === eq.id);
             return (
               <EquipmentSymbol
@@ -641,22 +661,22 @@ export function ZonePIDRenderer({
                 eq={eq}
                 status={status}
                 isSelected={selectedId === eq.id}
-                onClick={() => onSelect?.('equipment', eq.id)}
+                onClick={() => {
+                  // If clicking same item, reset view; otherwise zoom to it
+                  if (selectedId === eq.id) {
+                    onSelect?.('', '');
+                    handleResetView();
+                  } else {
+                    onSelect?.('equipment', eq.id);
+                  }
+                }}
               />
             );
           })}
 
-          {/* Name labels */}
+          {/* Labels */}
           {showLabels && zone.equipment.map(eq => (
-            <text
-              key={`label-${eq.id}`}
-              x={eq.x + eq.width / 2}
-              y={eq.y + eq.height + 12}
-              textAnchor="middle"
-              fill="#52525b"
-              fontSize="7"
-              fontFamily="system-ui"
-            >
+            <text key={`label-${eq.id}`} x={eq.x + eq.width / 2} y={eq.y + eq.height + 12} textAnchor="middle" fill="#52525b" fontSize="7" fontFamily="system-ui">
               {eq.name.length > 20 ? eq.name.slice(0, 18) + '…' : eq.name}
             </text>
           ))}
@@ -672,7 +692,6 @@ export function ZonePIDRenderer({
             />
           ))}
 
-          {/* Title Block */}
           <TitleBlock zone={zone} />
         </g>
       </svg>
