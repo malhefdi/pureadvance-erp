@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { ALL_SYMBOLS, PIPING_LINES } from '@/lib/pid-symbols';
+import { useBreakpoints } from '@/hooks/use-breakpoints';
 import type { PIDEquipment, PIDInstrument, PIDControlLoop, PIDConnection } from '@/types/pid';
 import type {
   ZonePIDData,
@@ -548,9 +549,20 @@ export function ZonePIDRenderer({
   showFlowAnimation = true,
 }: ZonePIDRendererProps) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const originalVB = useRef(zone.viewBox);
+  const { isMobile, isSmall } = useBreakpoints();
+
+  // Touch gesture state
+  const touchState = useRef({
+    initialDistance: 0,
+    initialZoom: 1,
+    initialPan: { x: 0, y: 0 },
+    lastTouch: { x: 0, y: 0 },
+    isPanning: false,
+  });
 
   // Reset view when zone changes
   useEffect(() => {
@@ -570,12 +582,11 @@ export function ZonePIDRenderer({
     const eq = zone.equipment.find(e => e.id === selectedId);
     if (!eq) return;
 
-    // Calculate viewBox centered on equipment with padding
-    const padding = 120;
+    const padding = isMobile ? 180 : 120;
     const centerX = eq.x + eq.width / 2;
     const centerY = eq.y + eq.height / 2;
     const aspect = zone.viewBox.width / zone.viewBox.height;
-    const vbHeight = Math.max(eq.height + padding * 2, 200);
+    const vbHeight = Math.max(eq.height + padding * 2, isMobile ? 250 : 200);
     const vbWidth = vbHeight * aspect;
 
     animateViewBox(svgRef, {
@@ -584,12 +595,45 @@ export function ZonePIDRenderer({
       width: vbWidth,
       height: vbHeight,
     });
-  }, [selectedId]);
+  }, [selectedId, isMobile]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     setZoom(z => Math.max(0.5, Math.min(3, z * delta)));
+  }, []);
+
+  // Touch: pinch-to-zoom
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      touchState.current.initialDistance = Math.sqrt(dx * dx + dy * dy);
+      touchState.current.initialZoom = zoom;
+    } else if (e.touches.length === 1) {
+      touchState.current.isPanning = true;
+      touchState.current.lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  }, [zoom]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const scale = distance / touchState.current.initialDistance;
+      setZoom(z => Math.max(0.5, Math.min(3, touchState.current.initialZoom * scale)));
+    } else if (e.touches.length === 1 && touchState.current.isPanning) {
+      const dx = e.touches[0].clientX - touchState.current.lastTouch.x;
+      const dy = e.touches[0].clientY - touchState.current.lastTouch.y;
+      setPan(p => ({ x: p.x + dx * 0.5, y: p.y + dy * 0.5 }));
+      touchState.current.lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    touchState.current.isPanning = false;
   }, []);
 
   const handleResetView = useCallback(() => {
@@ -598,23 +642,33 @@ export function ZonePIDRenderer({
     setPan({ x: 0, y: 0 });
   }, []);
 
+  // Responsive SVG height
+  const svgMinHeight = isMobile ? '280px' : '400px';
+  const svgMaxHeight = isMobile ? '400px' : '600px';
+
   return (
-    <div className="relative bg-zinc-950/50 rounded-xl border border-zinc-800 overflow-hidden">
-      {/* Zoom controls */}
-      <div className="absolute top-3 right-3 z-10 flex items-center gap-1 bg-zinc-900/90 backdrop-blur rounded-lg border border-zinc-700 p-1">
-        <button onClick={() => setZoom(z => Math.min(3, z * 1.2))} className="px-2 py-1 text-xs text-zinc-400 hover:text-white transition-colors">+</button>
-        <span className="text-xs text-zinc-500 font-mono w-10 text-center">{Math.round(zoom * 100)}%</span>
-        <button onClick={() => setZoom(z => Math.max(0.5, z * 0.8))} className="px-2 py-1 text-xs text-zinc-400 hover:text-white transition-colors">−</button>
-        <button onClick={handleResetView} className="px-2 py-1 text-xs text-zinc-400 hover:text-white transition-colors border-l border-zinc-700">Reset</button>
+    <div ref={containerRef} className="relative bg-zinc-950/50 rounded-xl border border-zinc-800 overflow-hidden">
+      {/* Zoom controls — compact on mobile */}
+      <div className={cn(
+        'absolute top-2 right-2 z-10 flex items-center gap-1 bg-zinc-900/90 backdrop-blur rounded-lg border border-zinc-700',
+        isMobile ? 'p-0.5' : 'p-1'
+      )}>
+        <button onClick={() => setZoom(z => Math.min(3, z * 1.2))} className={cn('text-zinc-400 hover:text-white transition-colors', isMobile ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs')}>+</button>
+        <span className={cn('text-zinc-500 font-mono text-center', isMobile ? 'text-[10px] w-8' : 'text-xs w-10')}>{Math.round(zoom * 100)}%</span>
+        <button onClick={() => setZoom(z => Math.max(0.5, z * 0.8))} className={cn('text-zinc-400 hover:text-white transition-colors', isMobile ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs')}>−</button>
+        <button onClick={handleResetView} className={cn('text-zinc-400 hover:text-white transition-colors border-l border-zinc-700', isMobile ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs')}>Fit</button>
       </div>
 
       {/* SVG Canvas */}
       <svg
         ref={svgRef}
         viewBox={`${zone.viewBox.x} ${zone.viewBox.y} ${zone.viewBox.width} ${zone.viewBox.height}`}
-        className="w-full"
-        style={{ minHeight: '400px', maxHeight: '600px', cursor: 'grab' }}
+        className="w-full touch-none"
+        style={{ minHeight: svgMinHeight, maxHeight: svgMaxHeight, cursor: 'grab' }}
         onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         <defs>
           <pattern id={`pid-grid-${zone.zoneId}`} width="20" height="20" patternUnits="userSpaceOnUse">

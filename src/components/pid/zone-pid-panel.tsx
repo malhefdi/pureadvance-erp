@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { ZonePIDRenderer } from './zone-pid-renderer';
 import { ZONE_LABELS } from '@/lib/pid-data';
 import { useZoneLiveData } from '@/hooks/use-zone-live-data';
+import { useBreakpoints } from '@/hooks/use-breakpoints';
 import type { ZonePIDData, ZoneKPISummary, EquipmentLiveData, AlarmSeverity } from '@/types/pid-zone';
 import { cn } from '@/lib/utils';
 import {
@@ -99,8 +100,8 @@ function EquipmentTable({ zone, selectedId, onSelect }: {
   onSelect: (type: string, id: string) => void;
 }) {
   return (
-    <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden">
-      <table className="w-full text-xs">
+    <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-x-auto">
+      <table className="w-full text-xs min-w-[600px]">
         <thead>
           <tr className="bg-zinc-800/50 text-zinc-500 uppercase tracking-wider">
             <th className="text-left py-2 px-3 w-6" />
@@ -159,8 +160,8 @@ function InstrumentTable({ zone, selectedId, onSelect }: {
   onSelect: (type: string, id: string) => void;
 }) {
   return (
-    <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-hidden">
-      <table className="w-full text-xs">
+    <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 overflow-x-auto">
+      <table className="w-full text-xs min-w-[600px]">
         <thead>
           <tr className="bg-zinc-800/50 text-zinc-500 uppercase tracking-wider">
             <th className="text-left py-2 px-3">Tag</th>
@@ -372,13 +373,13 @@ function ZoneSelector({ activeZone, onZoneChange }: {
   onZoneChange: (zoneId: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
+    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mb-1 scrollbar-thin">
       {Object.entries(ZONE_LABELS).map(([id, label]) => (
         <button
           key={id}
           onClick={() => onZoneChange(id)}
           className={cn(
-            'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+            'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap flex-shrink-0',
             activeZone === id
               ? 'bg-violet-600/20 text-violet-400 border border-violet-500/30'
               : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50 border border-transparent'
@@ -405,6 +406,7 @@ export function ZonePIDPanel({ initialZone = 'z-upstream' }: { initialZone?: str
   const [showConnections, setShowConnections] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
   const [showFlowAnimation, setShowFlowAnimation] = useState(true);
+  const { isMobile, isSmall } = useBreakpoints();
 
   const {
     data: zone,
@@ -491,21 +493,20 @@ export function ZonePIDPanel({ initialZone = 'z-upstream' }: { initialZone?: str
       {/* KPI Header */}
       <KPIHeader kpi={kpi} zoneName={zone.zoneName} />
 
-      {/* Tab Selector */}
-      <div className="flex items-center gap-2 bg-zinc-900/50 rounded-xl border border-zinc-800 p-2">
+      {/* Tab Selector — scrollable on mobile */}
+      <div className="flex items-center gap-2 bg-zinc-900/50 rounded-xl border border-zinc-800 p-2 overflow-x-auto">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
+              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0',
               activeTab === tab.id
                 ? 'bg-violet-600/20 text-violet-400 border border-violet-500/30'
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50 border border-transparent'
             )}
           >
-            {tab.icon}
-            {tab.label}
+            {isMobile ? tab.icon : <>{tab.icon} {tab.label}</>}
           </button>
         ))}
       </div>
@@ -513,23 +514,23 @@ export function ZonePIDPanel({ initialZone = 'z-upstream' }: { initialZone?: str
       {/* Drawing Tab */}
       {activeTab === 'drawing' && (
         <>
-          {/* Layer controls */}
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-xs text-zinc-400">
+          {/* Layer controls — wrap on mobile */}
+          <div className="flex items-center gap-3 flex-wrap text-xs text-zinc-400">
+            <label className="flex items-center gap-1.5">
               <input type="checkbox" checked={showInstruments} onChange={e => setShowInstruments(e.target.checked)} className="accent-violet-500" />
-              Instruments
+              {isMobile ? 'Inst.' : 'Instruments'}
             </label>
-            <label className="flex items-center gap-2 text-xs text-zinc-400">
+            <label className="flex items-center gap-1.5">
               <input type="checkbox" checked={showConnections} onChange={e => setShowConnections(e.target.checked)} className="accent-violet-500" />
-              Connections
+              {isMobile ? 'Pipes' : 'Connections'}
             </label>
-            <label className="flex items-center gap-2 text-xs text-zinc-400">
+            <label className="flex items-center gap-1.5">
               <input type="checkbox" checked={showLabels} onChange={e => setShowLabels(e.target.checked)} className="accent-violet-500" />
               Labels
             </label>
-            <label className="flex items-center gap-2 text-xs text-zinc-400">
+            <label className="flex items-center gap-1.5">
               <input type="checkbox" checked={showFlowAnimation} onChange={e => setShowFlowAnimation(e.target.checked)} className="accent-violet-500" />
-              Flow Animation
+              {isMobile ? 'Flow' : 'Flow Animation'}
             </label>
           </div>
 
@@ -573,7 +574,7 @@ export function ZonePIDPanel({ initialZone = 'z-upstream' }: { initialZone?: str
         </div>
       )}
 
-      {/* Control Loops Tab — with PID block diagrams */}
+      {/* Control Loops Tab — compact on mobile, full on desktop */}
       {activeTab === 'loops' && (
         <div className="space-y-3">
           {zone.controlLoops.map(loop => (
@@ -582,6 +583,7 @@ export function ZonePIDPanel({ initialZone = 'z-upstream' }: { initialZone?: str
               loop={loop}
               instrumentValues={zone.instrumentValues}
               equipmentStatus={zone.equipmentStatus}
+              compact={isMobile}
             />
           ))}
         </div>
